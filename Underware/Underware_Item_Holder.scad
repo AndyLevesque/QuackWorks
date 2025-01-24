@@ -117,6 +117,8 @@ leftLateralCapture = 3;
 /* [Additional Customization] */
 //Thickness of item holder walls (by mm)
 wallThickness = 2; //.1
+//Thickness of backplate (by mm)
+backPlateThickness = 6.5; //.1
 //Thickness of item holder base (by mm)
 baseThickness = 3; //.1
 //Only generate the backer mounting plate
@@ -288,12 +290,14 @@ module makebackPlate(maxBackWidth, backHeight, distanceBetweenSlots, backThickne
                except_edges=BACK, 
                anchor=FRONT+BOT
               );
+        // Compute yslot pos given backplate thickness
+        yslot = -backThickness + 5 + slotDepthMicroadjustment;
         //Loop through slots and center on the item
         //Note: I kept doing math until it looked right. It's possible this can be simplified.
         if(slotCount % 2 == 1){
             //odd number of slots, place on on x=0
             translate(v = [0,
-                           -2.35 + slotDepthMicroadjustment,
+                           yslot,
                            trueBackHeight-slotStopFromBack
                           ])
                 {
@@ -311,7 +315,7 @@ module makebackPlate(maxBackWidth, backHeight, distanceBetweenSlots, backThickne
             // place a slot left and right of center.
             echo("slotLoc", slotLoc)
             translate(v = [slotLoc * distanceBetweenSlots,
-                           -2.35 + slotDepthMicroadjustment,
+                           yslot,
                            trueBackHeight-slotStopFromBack
                           ])
                 {
@@ -323,7 +327,7 @@ module makebackPlate(maxBackWidth, backHeight, distanceBetweenSlots, backThickne
                 }
             }
             translate(v = [slotLoc * distanceBetweenSlots * -1,
-                           -2.35 + slotDepthMicroadjustment,
+                           yslot,
                            trueBackHeight-slotStopFromBack
                           ])
                 {
