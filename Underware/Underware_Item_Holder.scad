@@ -189,7 +189,7 @@ union(){
             maxBackWidth = totalWidth, 
             backHeight = totalHeight, 
             distanceBetweenSlots = distanceBetweenSlots,
-            backThickness=4.8,
+            backThickness=backPlateThickness,
             enforceMaxWidth=true,
             slotStopFromBack = Multiconnect_Stop_Distance_From_Back
             );
@@ -200,7 +200,7 @@ union(){
             maxBackWidth = totalWidth, 
             backHeight = totalHeight, 
             distanceBetweenSlots = distanceBetweenSlots,
-            backThickness=6.5,
+            backThickness=backPlateThickness,
             enforceMaxWidth=true,
             slotStopFromBack = Multiconnect_Stop_Distance_From_Back
             );
