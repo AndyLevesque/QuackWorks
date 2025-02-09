@@ -34,7 +34,6 @@ Notes:
 
 include <BOSL2/std.scad>
 include <BOSL2/walls.scad>
-include <../lib/mounting_backers.scad>
 
 /* [Beta Feature - Slot Type] */
 //Multipoint in Beta - Please share feedback! How do you intend to mount the item holder to a surface such as Multipoint connections or DavidD's Multiconnect?
@@ -230,7 +229,7 @@ module basket() {
     
 }
 
-/*
+
 //BEGIN MODULES
 //Slotted back Module
 module makebackPlate(backWidth, backHeight, distanceBetweenSlots, backThickness, slotStopFromBack = 13)
@@ -291,9 +290,7 @@ module makebackPlate(backWidth, backHeight, distanceBetweenSlots, backThickness,
         }
     }   
 }
-*/
 
-/*
 //Create GOEWS cleats
 module GOEWSCleatTool(totalHeight) {
     difference() {
@@ -317,9 +314,7 @@ module GOEWSCleatTool(totalHeight) {
                 cylinder(h = 6, r = 9.5, $fn = 256);
     }
 }
-*/
 
-/*
 //Create Slot Tool
 module multiConnectSlotTool(totalHeight) {
     //In slotTool, added a new variable distanceOffset which is set by the option:
@@ -358,8 +353,7 @@ module multiConnectSlotTool(totalHeight) {
                     polygon(points = [[0,0],[0,1.5],[1.5,0]]);
     }
 }
-*/
-/*
+
 module multiPointSlotTool(totalHeight) {
     slotBaseRadius = 17.0 / 2.0;  // wider width of the inner part of the channel
     slotSkinRadius = 13.75 / 2.0;  // narrower part of the channel near the skin of the model
@@ -423,9 +417,7 @@ module multiPointSlotTool(totalHeight) {
             }
     }
 }
-*/
 
-/*
 module xSlotDimples(y, slotBaseRadius, distanceBetweenSlots, distanceOffset){
     //Multipoint dimples are truncated (on top and side) pyramids
     //this function makes one pair of them
@@ -466,4 +458,5 @@ module yMultipointSlotDimples(z, slotBaseRadius, distanceBetweenSlots, distanceO
            cube([3,3,10], center=true);
     }
 }   
-*/
+
+

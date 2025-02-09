@@ -1,0 +1,66 @@
+name: CI
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch
+  # push:
+  #   branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the repository
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Ensure full repository content is fetched
+
+      # Debug: List repository contents
+      - name: List repository contents
+        run: ls -R
+
+      # Get the files that have been changed in the PR
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: '**/*.scad'
+          separator: ','
+          files_ignore: 'output/**'
+          # files_yaml: |
+          #   underware:
+          #     - Underware/**
+
+      - name: List all changed files
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+        run: |
+          echo ${ALL_CHANGED_FILES}
+          for file in ${ALL_CHANGED_FILES}; do
+            echo "$file was changed"
+          done
+
+      # Run the include processor script
+      - name: Process SCAD
+        id: process-scad
+        if: steps.changed-files.outputs.any_changed == 'true'
+        env:
+          UNDERWARE_ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+        shell: pwsh
+        run: |
+            $pathArray = $env:UNDERWARE_ALL_CHANGED_FILES.Split(',')
+            Write-Host "Processing SCAD files: $pathArray"
+            ./.github/workflows/scripts/scad/scad-include-processor.ps1 -pathArray $pathArray
+
+      # Upload the /underware folder as an artifact. Run only if process-scad has run
+      - name: Upload Scad Output folder
+        uses: actions/upload-artifact@v4
+        if: steps.process-scad.outcome == 'success'
+        with:
+          name: scad-artifacts
+          path: output
