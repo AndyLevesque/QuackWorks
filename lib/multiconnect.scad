@@ -1,5 +1,5 @@
 //Create Slot Tool
-module multiConnectSlotTool(totalHeight) {
+module multiConnectSlotTool(totalHeight, onRampEveryXSlots = 1) {
     //In slotTool, added a new variable distanceOffset which is set by the option:
     distanceOffset = onRampHalfOffset ? distanceBetweenSlots / 2 : 0;
     scale(v = slotTolerance)

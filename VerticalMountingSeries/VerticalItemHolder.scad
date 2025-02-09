@@ -38,7 +38,7 @@ include <../lib/mounting_backers.scad>
 
 /* [Beta Feature - Slot Type] */
 //Multipoint in Beta - Please share feedback! How do you intend to mount the item holder to a surface such as Multipoint connections or DavidD's Multiconnect?
-Connection_Type = "GOEWS"; // [Multipoint, Multiconnect, GOEWS]
+Connection_Type = "Multiconnect"; // [Multipoint, Multiconnect, GOEWS]
 
 /* [Internal Dimensions] */
 //Height (in mm) from the top of the back to the base of the internal floor
@@ -144,8 +144,6 @@ if(debugCutoutTool){
     else multiPointSlotTool(totalHeight);
 }
 
-onRampEveryXSlots = On_Ramp_Every_X_Slots;
-
 //Calculated
 totalHeight = internalHeight+baseThickness;
 totalDepth = internalDepth + wallThickness;
@@ -165,7 +163,9 @@ union(){
             backWidth = totalWidth, 
             backHeight = totalHeight, 
             distanceBetweenSlots = distanceBetweenSlots,
-            backThickness=4.8);
+            backThickness=4.8,
+            onRampEveryXSlots = On_Ramp_Every_X_Slots
+        );
     }
     if(Connection_Type == "Multiconnect"){
         translate([-max(totalWidth,distanceBetweenSlots)/2,0.01,-baseThickness])
@@ -173,7 +173,9 @@ union(){
             backWidth = totalWidth, 
             backHeight = totalHeight, 
             distanceBetweenSlots = distanceBetweenSlots,
-            backThickness=6.5);
+            backThickness=6.5,
+            onRampEveryXSlots = On_Ramp_Every_X_Slots
+        );
     }
     if(Connection_Type == "GOEWS"){
         translate([-max(totalWidth,distanceBetweenSlots)/2,0.01,-baseThickness])
@@ -181,7 +183,8 @@ union(){
             backWidth = totalWidth, 
             backHeight = totalHeight, 
             distanceBetweenSlots = 42,
-            backThickness=7
+            backThickness=7,
+            onRampEveryXSlots = On_Ramp_Every_X_Slots
         );
     }
 }

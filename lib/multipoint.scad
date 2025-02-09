@@ -1,4 +1,4 @@
-module multiPointSlotTool(totalHeight) {
+module multiPointSlotTool(totalHeight, onRampEveryXSlots = 1) {
     slotBaseRadius = 17.0 / 2.0;  // wider width of the inner part of the channel
     slotSkinRadius = 13.75 / 2.0;  // narrower part of the channel near the skin of the model
     slotBaseCatchDepth = .2;  // innermost before the chamfer, base to chamfer height
@@ -35,7 +35,7 @@ module multiPointSlotTool(totalHeight) {
             }
             //dimples on each catch point
             if (!slotQuickRelease){
-                for(z = [1:On_Ramp_Every_X_Slots:totalHeight/distanceBetweenSlots ])
+                for(z = [1:onRampEveryXSlots:totalHeight/distanceBetweenSlots ])
                 {
                     echo("building on z", z);
                     yMultipointSlotDimples(z, slotBaseRadius, distanceBetweenSlots, distanceOffset);
