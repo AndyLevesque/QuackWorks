@@ -26,7 +26,7 @@ Channel_Width_in_Units = 1;
 //Height (Z axis) inside the channel (in mm)
 Channel_Internal_Height = 12; //[12:6:72]
 //Grid units to move over (X axis)
-Units_Over = 2; //[1:1:10]
+Units_Over = 1; //[1:1:10]
 //Grid units to move up (Y axis)
 Units_Up = 2; //[1:1:10]
 

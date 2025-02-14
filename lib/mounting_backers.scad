@@ -1,5 +1,39 @@
-///*[Slot Customization]*/
 /*
+Created by Andy (BlackjackDuck)
+
+This code is licensed Creative Commons 4.0 Attribution Non-Commercial Sharable with Attribution
+References to Multipoint are for the Multiboard ecosystem by Jonathan at Keep Making. The Multipoint mount system is licensed under https://www.multiboard.io/license.
+
+Credit to 
+    @David D on Printables for Multiconnect
+    Jonathan at Keep Making for Multiboard
+    @SnazzyGreenWarrior on GitHub for their contributions on the Multipoint-compatible mount
+    MrExo3D on Printables for the GOEWS system
+
+Using this module: 
+    This module imports the various mounting systems created within the QuackWorks repo and generates a "backer plate" with that standard. The backer plate is a flat plate intended to be attached to the back of various items to be mounted. 
+    Parameters below should be passed to the main module to appear in the customizer.
+    Primary inputs are width and height.
+    distanceBetweenSlots is indicative to the grid size and drives the distance between slots or other mounting points. 
+*/
+
+include <BOSL2/std.scad>
+include <BOSL2/walls.scad>
+
+include <goews.scad>
+include <multiconnect.scad>
+include <multipoint.scad>
+
+/*[Mounting]*/
+//Multipoint in Beta - Please share feedback! How do you intend to mount the item holder to a surface such as Multipoint connections or DavidD's Multiconnect?
+Connection_Type = "Multiconnect"; // [Multipoint, Multiconnect, GOEWS]
+
+/*[Style Customizations]*/
+//Edge rounding (in mm)
+edgeRounding = 0.5; // [0:0.1:2]
+
+/*[Slot Customization]*/
+
 onRampHalfOffset = true;
 //Distance between Multiconnect slots on the back (25mm is standard for MultiBoard)
 distanceBetweenSlots = 25;
@@ -19,18 +53,25 @@ onRampEnabled = true;
 On_Ramp_Every_X_Slots = 1;
 //Distance from the back of the item holder to where the multiconnect stops (i.e., where the dimple is) (by mm)
 Multiconnect_Stop_Distance_From_Back = 13;
-*/
 
-include <goews.scad>
-include <multiconnect.scad>
-include <multipoint.scad>
+/*[GOEWS Customization]*/
+GOEWS_Cleat_position = "normal"; // [normal, top, bottom, custom]
+GOEWS_Cleat_custom_height_from_top_of_back = 11.24;
+
+//example call makebackPlate
+//makebackPlate(backWidth = 50, backHeight = 50, distanceBetweenSlots = distanceBetweenSlots, Connection_Type = Connection_Type);
 
 //Slotted back Module
-module makebackPlate(backWidth, backHeight, distanceBetweenSlots, backThickness, slotStopFromBack = 13, onRampEveryXSlots = 1)
+module makebackPlate(backWidth, backHeight, distanceBetweenSlots = 25, backThickness = 0, slotStopFromBack = 13, onRampEveryXSlots = 1, Connection_Type = "Multiconnect")
 {
     //slot count calculates how many slots can fit on the back. Based on internal width for buffer. 
     //slot width needs to be at least the distance between slot for at least 1 slot to generate
-    let (backWidth = max(backWidth,distanceBetweenSlots), backHeight = max(backHeight, 25),slotCount = floor(backWidth/distanceBetweenSlots)- subtractedSlots){
+    let (
+            backWidth = max(backWidth,distanceBetweenSlots), 
+            backHeight = max(backHeight, 25),
+            slotCount = floor(backWidth/distanceBetweenSlots)- subtractedSlots,
+            backThickness = backThicknessCalc(backThicknessRequested = backThickness, Connection_Type)
+        ){
         if(Connection_Type != "GOEWS"){
             difference() {
                 translate(v = [0,-backThickness,0]) 
@@ -40,10 +81,10 @@ module makebackPlate(backWidth, backHeight, distanceBetweenSlots, backThickness,
                 for (slotNum = [0:1:slotCount-1]) {
                     translate(v = [distanceBetweenSlots/2+(backWidth/distanceBetweenSlots-slotCount)*distanceBetweenSlots/2+slotNum*distanceBetweenSlots,-2.35+slotDepthMicroadjustment,backHeight-Multiconnect_Stop_Distance_From_Back]) {
                         if(Connection_Type == "Multipoint"){
-                            multiPointSlotTool(totalHeight, onRampEveryXSlots);
+                            multiPointSlotTool(backHeight, onRampEveryXSlots);
                         }
                         if(Connection_Type == "Multiconnect"){
-                            multiConnectSlotTool(totalHeight, onRampEveryXSlots);
+                            multiConnectSlotTool(backHeight, onRampEveryXSlots);
                         }
                     }
                 }
@@ -62,7 +103,7 @@ module makebackPlate(backWidth, backHeight, distanceBetweenSlots, backThickness,
                     // Add cleats
                     for (slotNum = [0:1:slotCount-1]) {
                         translate(v = [distanceBetweenSlots/2+(backWidth/distanceBetweenSlots-slotCount)*distanceBetweenSlots/2+slotNum*distanceBetweenSlots,-1 * backThickness,backHeight-GOEWS_Cleat_custom_height_from_top_of_back]) {
-                            GOEWSCleatTool(totalHeight);
+                            GOEWSCleatTool(backHeight);
                         }
                     }
                 };
@@ -84,3 +125,11 @@ module makebackPlate(backWidth, backHeight, distanceBetweenSlots, backThickness,
         }
     }   
 }
+
+
+function backThicknessCalc(backThicknessRequested, mountingType) = 
+    backThicknessRequested != 0 ? backThicknessRequested : 
+    mountingType == "GOEWS" ? 7 :
+    mountingType == "Multipoint" ? 4.8 :
+    mountingType == "Multiconnect" ? 6.5 : 
+    backThickenssRequested;

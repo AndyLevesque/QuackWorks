@@ -1,4 +1,4 @@
-/*Created by Andy Levesque
+/*Created by Andy (BlackjackDuck)
 
 This code is licensed Creative Commons 4.0 Attribution Non-Commercial Sharable with Attribution
 References to Multipoint are for the Multiboard ecosystem by Jonathan at Keep Making. The Multipoint mount system is licensed under https://www.multiboard.io/license.
@@ -157,37 +157,16 @@ union(){
     translate(v = [-internalWidth/2,0,0]) 
         basket();
         //slotted back
-    if(Connection_Type == "Multipoint"){
     translate([-max(totalWidth,distanceBetweenSlots)/2,0.01,-baseThickness])
         makebackPlate(
             backWidth = totalWidth, 
             backHeight = totalHeight, 
             distanceBetweenSlots = distanceBetweenSlots,
-            backThickness=4.8,
-            onRampEveryXSlots = On_Ramp_Every_X_Slots
+            onRampEveryXSlots = On_Ramp_Every_X_Slots,
+            Connection_Type = Connection_Type
         );
     }
-    if(Connection_Type == "Multiconnect"){
-        translate([-max(totalWidth,distanceBetweenSlots)/2,0.01,-baseThickness])
-        makebackPlate(
-            backWidth = totalWidth, 
-            backHeight = totalHeight, 
-            distanceBetweenSlots = distanceBetweenSlots,
-            backThickness=6.5,
-            onRampEveryXSlots = On_Ramp_Every_X_Slots
-        );
-    }
-    if(Connection_Type == "GOEWS"){
-        translate([-max(totalWidth,distanceBetweenSlots)/2,0.01,-baseThickness])
-        makebackPlate(
-            backWidth = totalWidth, 
-            backHeight = totalHeight, 
-            distanceBetweenSlots = 42,
-            backThickness=7,
-            onRampEveryXSlots = On_Ramp_Every_X_Slots
-        );
-    }
-}
+
 
 //Create Basket
 module basket() {
