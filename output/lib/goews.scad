@@ -1,3 +1,10 @@
+
+///*[GOEWS Customization]*/
+/*
+GOEWS_Cleat_position = "normal"; // [normal, top, bottom, custom]
+GOEWS_Cleat_custom_height_from_top_of_back = 11.24;
+*/
+
 //Create GOEWS cleats
 module GOEWSCleatTool(totalHeight) {
     difference() {
@@ -21,3 +28,6 @@ module GOEWSCleatTool(totalHeight) {
                 cylinder(h = 6, r = 9.5, $fn = 256);
     }
 }
+
+
+

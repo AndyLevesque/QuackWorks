@@ -287,36 +287,40 @@ function New-ScadFile {
 function Read-ImportsFromScadFile {
     param (
         [ScadFile]$scadFile
-        # ,
-        # [ImportType]$type
     )
 
     $scadDirectory = Split-Path -Path $scadFile.Path
-
     $importArrary = @()
 
     foreach ($import in $scadFile.Imports) {
-        $processingImport = $import
         try {
-            $found = Find-File -directory $scadDirectory -fileName $processingImport.Name
+            $found = Find-File -directory $scadDirectory -fileName $import.Name
 
             if ($found) {
-                Write-Verbose "Found include file: $import.Name at $($found.FullName)"
-
+                Write-Verbose "Found include file: $($import.Name) at $($found.FullName)"
                 $foundImport = New-Object Import -ArgumentList @($import.Name, $import.Type)
-
                 $foundImport.Path = $found.FullName
                 $foundImport.Content = Get-Content -Path $found.FullName -Raw
                 $foundImport.Modules = Get-ModulesFromFile -filePath $found.FullName
-                if (-not $foundImport.Modules) {
-                    $foundImport.Modules = @()
-                }
+                if (-not $foundImport.Modules) { $foundImport.Modules = @() }
                 $foundImport.Functions = Get-FunctionsFromFile -filePath $found.FullName
-                if (-not $foundImport.Functions) {
-                    $foundImport.Functions = @()
-                }
-
+                if (-not $foundImport.Functions) { $foundImport.Functions = @() }
                 $importArrary += $foundImport
+            }
+            else {
+                # If missing file is expected (e.g. BOSL2/ files), log and add import with empty content
+                if ($import.Name -match '^BOSL2') {
+                    Write-Verbose "Expected missing BOSL2 file: $($import.Name). Skipping file read."
+                    $emptyImport = New-Object Import -ArgumentList @($import.Name, $import.Type)
+                    $emptyImport.Content = ""
+                    $emptyImport.Path = $null
+                    $emptyImport.Modules = @()
+                    $emptyImport.Functions = @()
+                    $importArrary += $emptyImport
+                }
+                else {
+                    Write-Warning "No file found for: $($import.Name)"
+                }
             }
         } catch {
             Write-Warning "Could not read file: $($import.Name) . $_"
@@ -324,46 +328,6 @@ function Read-ImportsFromScadFile {
     }
 
     return $importArrary
-
-    # if ($type -eq [ImportType]::Include) {
-    #     $imports = $scadFile.Includes
-    # } elseif ($type -eq [ImportType]::Use) {
-    #     $imports = $scadFile.Uses
-    # } else {
-    #     Write-Warning "Unknown import type: $type"
-    #     return $importArrary
-    # }
-
-    # foreach ($import in $imports) {
-    #     $processingImport = $import
-    #     try {
-    #         $found = Find-File -directory $scadDirectory -fileName $processingImport.Name
-
-    #         if ($found) {
-    #             Write-Verbose "Found include file: $import.Name at $($found.FullName)"
-
-    #             $foundImport = New-Object Import -ArgumentList @($import.Name, $type)
-
-    #             # Create and populate an Include object
-    #             $foundImport.Path = $found.FullName
-    #             $foundImport.Content = Get-Content -Path $found.FullName -Raw
-    #             $foundImport.Modules = Get-ModulesFromFile -filePath $found.FullName
-    #             if (-not $foundImport.Modules) {
-    #                 $foundImport.Modules = @()
-    #             }
-    #             $foundImport.Functions = Get-FunctionsFromFile -filePath $found.FullName
-    #             if (-not $foundImport.Functions) {
-    #                 $foundImport.Functions = @()
-    #             }
-
-    #             $importArrary += $foundImport
-    #         }
-    #     } catch {
-    #         Write-Warning "Could not read file: $($import.Name) . $_"
-    #     }
-    # }
-
-    # return $importArrary
 }
 
 function Read-IncludeFiles {
@@ -408,47 +372,47 @@ function Find-File {
         [string]$fileName
     )
 
-        # Define search locations
-        $searchLocations = @(
-            # Same folder as the file
-            $directory,
+    # If fileName is a relative path (e.g. "../something.scad" or "./something.scad"), try direct resolution
+    if ($fileName -match '^(?:\.{1,2}[\\/]).*') {
+        $directPath = Join-Path -Path $directory -ChildPath $fileName
+        if (Test-Path -Path $directPath -PathType Leaf) {
+            Write-Verbose "Directly found relative file: $fileName at $directPath"
+            return Get-Item -Path $directPath
+        }
+    }
     
-            # Subfolders within the current folder (recursive)
-            (Get-ChildItem -Path $directory -Directory -Recurse -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }),
+    # Ensure $parentDirectory is defined
+    $parentDirectory = Split-Path -Parent $directory
+
+    $searchLocations = @(
+        # Current folder
+        $directory,
+        # All subfolders in the current folder (recursive)
+        (Get-ChildItem -Path $directory -Directory -Recurse -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }),
+        # Sibling folders in the same parent directory
+        (Get-ChildItem -Path $parentDirectory -Directory -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }),
+        # Repository root
+        (Get-PSDrive -Name ((Get-Item -Path $directory).PSDrive.Name)).Root
+    )
     
-            # Sibling folders in the same parent directory
-            (Get-ChildItem -Path $parentDirectory -Directory -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }),
-    
-            # Repository root
-            (Get-PSDrive -Name ((Get-Item -Path $directory).PSDrive.Name)).Root
-        )
-    
-        try {
-            foreach ($location in $searchLocations) {
-                # Skip null or invalid paths
-                if (-not $location -or -not (Test-Path -Path $location)) {
-                    continue
-                }
-    
-                # Search for the file in the current location
-                $found = Get-ChildItem -Path $location -Filter $fileName -File -ErrorAction SilentlyContinue |
-                         Select-Object -First 1
-    
-                if ($found) {
-                    Write-Verbose "Found file: $fileName at $($found.FullName)"
-                    return $found
-                }
+    try {
+        foreach ($location in $searchLocations) {
+            if (-not $location -or -not (Test-Path -Path $location)) {
+                continue
             }
-    
-            # Log a warning if the file was not found
-            Write-Warning "No file found for: $fileName"
-            return $null
+            $found = Get-ChildItem -Path $location -Filter $fileName -File -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($found) {
+                Write-Verbose "Found file: $fileName at $($found.FullName)"
+                return $found
+            }
         }
-        catch {
-            # Handle unexpected errors
-            Write-Warning "Error searching for include file '$includeFileName': $_"
-            return $null
-        }
+        Write-Warning "No file found for: $fileName"
+        return $null
+    }
+    catch {
+        Write-Warning "Error searching for include file '$fileName': $_"
+        return $null
+    }
 }
 
 function Get-Includes-From-ScadFile {
@@ -515,8 +479,8 @@ function Get-ModulesFromFile {
     foreach ($line in Get-Content -Path $filePath) {
         if ($line -match 'module\s+(\w+)\s*\(') {
             if ($currentModule) {
-                # Updated to use enum value [LogicType]::Module instead of Module class
-                $modules += New-Object Logic -ArgumentList $currentModule, ($currentContent -join "`n"), [LogicType]::Module
+                # Use the typed constructor instead of New-Object
+                $modules += [Logic]::new($currentModule, ($currentContent -join "`n"), [LogicType]::Module)
             }
             $currentModule = $matches[1]
             $currentContent = @($line)
@@ -526,7 +490,7 @@ function Get-ModulesFromFile {
     }
 
     if ($currentModule) {
-        $modules += New-Object Logic -ArgumentList $currentModule, ($currentContent -join "`n"), [LogicType]::Module
+        $modules += [Logic]::new($currentModule, ($currentContent -join "`n"), [LogicType]::Module)
     }
 
     return $modules
@@ -545,9 +509,7 @@ function Get-FunctionsFromFile {
     foreach ($line in Get-Content -Path $filePath) {
         if ($line -match 'function\s+(\w+)\s*\(') {
             if ($currentFunction) {
-                # Updated to use enum value [LogicType]::Function instead of Function class
-                $functionObject = New-Object Logic -ArgumentList $currentFunction, ($currentContent -join "`n"), [LogicType]::Function
-                $functions += $functionObject
+                $functions += [Logic]::new($currentFunction, ($currentContent -join "`n"), [LogicType]::Function)
             }
             $currentFunction = $matches[1]
             $currentContent = @($line)
@@ -557,8 +519,7 @@ function Get-FunctionsFromFile {
     }
 
     if ($currentFunction) {
-        $functionObject = New-Object Logic -ArgumentList $currentFunction, ($currentContent -join "`n"), [LogicType]::Function
-        $functions += $functionObject
+        $functions += [Logic]::new($currentFunction, ($currentContent -join "`n"), [LogicType]::Function)
     }
 
     return $functions
@@ -589,7 +550,7 @@ function Get-LogicParts-From-ScadFileContent {
     foreach ($line in $Content) {
         if ($line -match $regex) {
             if ($currentLogic) {
-                $logicArrary += New-Object Logic -ArgumentList $currentLogic, ($currentContent -join "`n"), $Type
+                $logicArrary += [Logic]::new($currentLogic, ($currentContent -join "`n"), $Type)
             }
             $currentLogic = $matches[1]
             $currentContent = @($line)
@@ -599,11 +560,12 @@ function Get-LogicParts-From-ScadFileContent {
     }
 
     if ($currentLogic) {
-        $logicArrary += New-Object Logic -ArgumentList $currentLogic, ($currentContent -join "`n"), $Type
+        $logicArrary += [Logic]::new($currentLogic, ($currentContent -join "`n"), $Type)
     }
 
     return $logicArrary
 }
+
 # ...existing code...
 
 function Test-FolderExists {
