@@ -6,16 +6,13 @@ Licensed Creative Commons 4.0 Attribution Non-Commercial Sharable with Attributi
 */
 
 /*[Standard Parameters]*/
-//Depth of shelf (in multiboard units of 25mm each) from front to back 
+//Depth of drawer (in units).
 shelfDepthUnits = 7;
-//Width of shelf (in multiboard units of 25mm each) from left to right 
-shelfWidthUnits = 4;
-//internal height of shelf (in mm)
+//Width of drawer (in units) (slide mount to slide mount). The inside space of the drawer is 29mm less than this value.
+Drawer_Width_in_Units = 5;
+//internal height of drawer (in mm)
 shelfHeight = 20;//5
-//thickness (in mm) of the shelf floor
-baseThickness = 1.5; //[0.5:0.25:7.5]
-//number of slots between multiconnect mounts
-slotSpacing = 2;
+
 /*[Drawer Bottom]*/
 bottomType = "Hex"; //["Hex","Solid"]
 //Center-to-center spacing of hex cells in the honeycomb
@@ -24,16 +21,9 @@ hexSpacing = 8; //[1:0.5:20]
 hexStrut = 1.5; //[0.5:0.25:5]
 
 /*[Drawer Front]*/
-drawerFrontType = "Detached Dovetail";// [Attached, Detached Dovetail, Detached Dado]
+drawerFrontType = "Detached Dovetail";// [Attached, Detached Dovetail]
 drawerPullType = "Upper Notch";// [Upper Notch, Hardware, None]
-//The small measurement (in mm) For the slot to slide in the drawer of the drawer
-drawerMountConeMin = 4.2;
-//The small measurement (in mm) For the slot to slide in the drawer of the drawer
-drawerMountConeMax = 8.2;
-//Depth/distance (in mm) from the small part of the cone to the large part of the cone
-drawerMountConeDepth = 3.6; 
-//Total depth/distance of the slot the slot
-drawerMountInset = 3.6;
+
 //Diameter of the drawer pull screw hole
 drawerPullHardwareDiameter = 4;
 //Drawer pull one screw or two? 
@@ -42,8 +32,14 @@ drawerPullHardwareMounting = "Dual";//[Single, Dual]
 drawerPullHardwareHoleSeparation = 40;
 //Difference (in mm) the shelf front dovetail is to the hole
 dovetailTolerance = 0.3;
-//Additional total width of the drawer front (0 matches the shelf width plus walls; 21 covers most of the drawer slide)
-drawerFrontExtraWidth = 21;
+//Additional total width of the drawer front (0 matches the shelf width plus walls; 25 covers most of the drawer slide)
+drawerFrontExtraWidth = 24;
+
+/*[Strength Parameters]*/
+//thickness (in mm) of the shelf floor
+baseThickness = 1.5; //[0.5:0.25:7.5]
+//wallThickness - need to figure out how to handle differing wall thicknesses without throwing off 25mm mounting increments
+wallThickness = 1.5; 
 
 /*[Export Selection]*/
 ExportDrawer = true;
@@ -53,17 +49,30 @@ ExportDrawerFront = true;
 ExportStopSnaps = true; 
 
 /*[Hidden]*/
-//wallThickness - need to figure out how to handle differing wall thicknesses without throwing off 25mm mounting increments
-wallThickness = 1.5; 
 //Lateral protrusion of the slide mechanism. MODIFYING WILL CAUSE THE DRAWERS TO NOT LINE UP. 
 slideDepth = 7.5;
 //additional space on the drawer slides for sliding room
 slideSlop = 1;
 unitsInMM = 25;
 depthInMM = shelfDepthUnits*unitsInMM;
-widthInMM = shelfWidthUnits*unitsInMM;
+widthInMM = (Drawer_Width_in_Units-1)*unitsInMM;
+
+shelfWidthUnits = Drawer_Width_in_Units - 1; //add 1 unit to account for the slides
+
+//Drawer Dovetail Mounting
+//The small measurement (in mm) For the slot to slide in the drawer of the drawer
+drawerMountConeMin = 4.2;
+//The small measurement (in mm) For the dovetail to slide in the drawer of the drawer
+drawerMountConeMax = 8.2;
+//Depth/distance (in mm) from the small part of the cone to the large part of the cone
+drawerMountConeDepth = 3.6; 
+//Total depth/distance of the dovetail
+drawerMountInset = 3.6;
+
 
 /*[Slot Customization]*/
+//number of slots between multiconnect mounts
+slotSpacing = 2;
 //QuickRelease removes the small indent in the top of the slots that lock the part into place
 dimplesEnabled = true;
 //Dimple scale tweaks the size of the dimple in the slot for printers that need a larger dimple to print correctly
@@ -73,8 +82,6 @@ slotTolerance = 1.00; //[1:0.005:1.075]
 //Move the slot in (positive) or out (negative) - Disabled at the moment
 //slotDepthMicroadjustment = 0; //[-.5:0.05:.5]
 //enable a slot on-ramp for easy mounting of tall items
-
-/*[Backer-Style Slot Customization]*/
 onRampEnabled = true;
 //frequency of slots for on-ramp. 1 = every slot; 2 = every 2 slots; etc.
 onRampEveryNSlots = 2;
@@ -82,6 +89,7 @@ onRampEveryNSlots = 2;
 onRampOffsetNSlots = 1;
 //move the start of the slots (in mm) up (positive) or down (negative)
 slotVerticalOffset = 0;
+
 
 /*[Debug]*/
 //If the front is detached, show the fit. Do not print in this orientation. 
