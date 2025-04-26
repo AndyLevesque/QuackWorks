@@ -50,7 +50,7 @@ Connector_Holes_Left = true;
 Connector_Holes_Top = true;
 
 /*[Screw Mounting Sizes]*/
-Screw_Name = "None";//[None, M2, M2.5, M3, M4, M5, M6, M8]
+Screw_Name = "None";//[None: None, M2: M2, M2.5:M2.5, M3: M3, M4: M4, M5: M5, M6: M6, M7: M7 - Special Case, M8: M8,  #4: #4, #6: #6, #8: #8, #10: #10, #12: #12, 1/4: 1/4, 5/16: 5/16]
 Screw_Head_Style = "None";//[None, Flat, Socket, Button, Pan, Cheese]
 Screw_Diameter = 4.1;
 Screw_Head_Diameter = 7.2;
