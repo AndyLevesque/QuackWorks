@@ -72,6 +72,8 @@ Interface_Thickness = 0.4;
 //Distance between the interface and the tile. This is the distance between the top of the tile and the bottom of the interface. Try to use a multiple of the layer height when combined with the interface thickness.
 Interface_Separation = 0.1; 
 
+/*[Hidden]*/
+
 adjustedInterfaceThickness = 
     Stacking_Method == "Interface Layer" ? Interface_Thickness : 0;
 
