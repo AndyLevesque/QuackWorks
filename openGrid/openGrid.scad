@@ -26,6 +26,7 @@ Credit to
 */
 
 include <BOSL2/std.scad>
+include <BOSL2/screws.scad>
 
 /*[Board Size]*/
 Full_or_Lite = "Lite";//[Full, Lite]
@@ -49,6 +50,8 @@ Connector_Holes_Left = true;
 Connector_Holes_Top = true;
 
 /*[Screw Mounting Sizes]*/
+Screw_Name = "None";//[None, M2, M2.5, M3, M4, M5, M6, M8]
+Screw_Head_Style = "None";//[None, Flat, Socket, Button, Pan, Cheese]
 Screw_Diameter = 4.1;
 Screw_Head_Diameter = 7.2;
 Screw_Head_Inset = 1;
@@ -215,16 +218,25 @@ module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, 
                 tag("remove")
                 move_copies([[tileSize*Board_Width/2-tileSize,tileSize*Board_Height/2-tileSize,0],[-tileSize*Board_Width/2+tileSize,tileSize*Board_Height/2-tileSize,0],[tileSize*Board_Width/2-tileSize,-tileSize*Board_Height/2+tileSize,0],[-tileSize*Board_Width/2+tileSize,-tileSize*Board_Height/2+tileSize,0]])
                 up(Tile_Thickness+0.01)
+                if (Screw_Name == "None") {
                     cyl(d=Screw_Head_Diameter, h=Screw_Head_Inset > 0 ? Screw_Head_Inset : 0.01, anchor=TOP)
                         attach(BOT, TOP) cyl(d2=Screw_Head_Diameter, d1=Screw_Diameter, h=Screw_Head_Diameter == Screw_Diameter ? 0.01 : sqrt((Screw_Head_Diameter/2-Screw_Diameter/2)^2))
                             attach(BOT, TOP) cyl(d=Screw_Diameter, h=Tile_Thickness+0.02);
+                } else { 
+                    screw_hole(Screw_Name, downcase(Screw_Head_Style), thread=true, l=Tile_Thickness+0.02, anchor=TOP);
+                }
             //Screw Mount Everywhere
             if(Screw_Mounting == "Everywhere")
                 tag("remove")
-                grid_copies(spacing=tileSize, size=[(Board_Width-2)*tileSize,(Board_Height-2)*tileSize])            up(Tile_Thickness+0.01)
+                grid_copies(spacing=tileSize, size=[(Board_Width-2)*tileSize,(Board_Height-2)*tileSize])
+                up(Tile_Thickness+0.01)
+                if (Screw_Name == "None") {
                     cyl(d=Screw_Head_Diameter, h=Screw_Head_Inset > 0 ? Screw_Head_Inset : 0.01, anchor=TOP)
                         attach(BOT, TOP) cyl(d2=Screw_Head_Diameter, d1=Screw_Diameter, h=Screw_Head_Diameter == Screw_Diameter ? 0.01 : sqrt((Screw_Head_Diameter/2-Screw_Diameter/2)^2))
                             attach(BOT, TOP) cyl(d=Screw_Diameter, h=Tile_Thickness+0.02);
+                } else { 
+                    screw_hole(Screw_Name, downcase(Screw_Head_Style), thread=true, l=Tile_Thickness+0.02, anchor=TOP);
+                }
             if(Connector_Holes){
                 //top and bottom connector holes
                 if(Board_Height > 1)
