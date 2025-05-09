@@ -17,6 +17,16 @@ Credit to
 
 include <BOSL2/std.scad>
 
+/*[openGrid Snap Options]*/
+// Snap type or compatibility with openGrid board type
+openGrid_Board_Type = "Lite"; // [Full, Lite]
+// Directional snap or lightweight snap
+openGrid_Snap_Type = "Directional"; // [Directional, Lightweight]
+
+/*[Hidden]*/
+Is_Lite = (openGrid_Board_Type == "Lite") ? true : false;
+Is_Directional = (openGrid_Snap_Type == "Directional") ? true : false;
+
 module openGridSnap(lite=false, directional=false, orient, anchor, spin){
 	module openGridSnapNub(w, nub_h, nub_w, nub_d, b_y, top_wedge_h, bot_wedge_h, r_x, r_r, r_s){
 		move([w/2, 0, 0]) 
@@ -125,5 +135,5 @@ module openGridSnap(lite=false, directional=false, orient, anchor, spin){
 	};
 };
 
-openGridSnap(lite=true, directional=true); 
+openGridSnap(lite=Is_Lite, directional=Is_Directional); 
 
