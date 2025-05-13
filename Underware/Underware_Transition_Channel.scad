@@ -33,6 +33,8 @@ Channel_Internal_Height_2 = 12; //[12:6:72]
 Channel_Length_Units = 3; 
 //The lateral distance of the rising portion of the channel
 Rise_Distance = 25; //[12.5:12.5:100]
+//The offset from center of the rising portion of the channel (0 == centered)
+Rise_Offset = 0; //[-100:12.5:100]
 
 /*[Mounting Options]*/
 //How do you intend to mount the channels to a surface such as Honeycomb Storage Wall or Multiboard? See options at https://handsonkatie.com/underware-2-0-the-made-to-measure-collection/
@@ -139,7 +141,7 @@ module straightHeightChangeChannelTop(lengthMM, widthMM1, widthMM2, heightMM1 = 
                 left(Channel_Width_in_Units_2 % 2 == 1 ? 12.5 :  0, newTopProfileFull(heightMM = Channel_Internal_Height_2, totalWidth = widthMM2, topThickness = topThickness)),
                 left(Channel_Width_in_Units_2 % 2 == 1 ? 12.5 :  0, newTopProfileFull(heightMM = Channel_Internal_Height_2, totalWidth = widthMM2, topThickness = topThickness))
             ],
-            z=[0,lengthMM/2-Rise_Distance/2,lengthMM/2+Rise_Distance/2,lengthMM],
+            z=[0,lengthMM/2-Rise_Distance/2+Rise_Offset,lengthMM/2+Rise_Distance/2+Rise_Offset,lengthMM],
             slices = 0
             );
     children();
@@ -162,7 +164,7 @@ module straightChangeChannelBase(lengthMM, widthMM1, widthMM2,anchor, spin, orie
                 left(Channel_Width_in_Units_2 % 2 == 1 ? 12.5 :  0, newBaseProfileFull(totalWidth = widthMM2)),
                 left(Channel_Width_in_Units_2 % 2 == 1 ? 12.5 :  0, newBaseProfileFull(totalWidth = widthMM2))
             ],
-            z=[0,lengthMM/2-Rise_Distance/2,lengthMM/2+Rise_Distance/2,lengthMM],
+            z=[0,lengthMM/2-Rise_Distance/2+Rise_Offset,lengthMM/2+Rise_Distance/2+Rise_Offset,lengthMM],
             slices = 0
             );
         tag("holes")  back(lengthMM/2-Grid_Size/2)  left(Channel_Width_in_Units_1 % 2 == 1 ? 12.5 :  0)
