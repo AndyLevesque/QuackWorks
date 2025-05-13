@@ -3,7 +3,19 @@ include <BOSL2/walls.scad>
 /*Created by Andy Levesque
 Credit to @David D on Printables and Jonathan at Keep Making for Multiconnect and Multiboard, respectively
 Licensed Creative Commons 4.0 Attribution Non-Commercial Sharable with Attribution for all parts except the snaps, which fall under the Keep Making license at multiboard.io/license
+
+Change Log:
+- 2025-03-26
+    - Initial Release
+- 2025-05-12
+    - Multiconnect rewrite to fix compatibility issues
+    - Updated code for openGrid support
+
 */
+
+/*[Mounting Options]*/
+//Mounting_Style = "Multiconnect"; //[Multiconnect, Threaded Snap]
+Mounting_Surface = "Multiboard"; //[Multiboard, openGrid]
 
 /*[Standard Parameters]*/
 //Depth of drawer (in units).
@@ -32,8 +44,7 @@ drawerPullHardwareMounting = "Dual";//[Single, Dual]
 drawerPullHardwareHoleSeparation = 40;
 //Difference (in mm) the shelf front dovetail is to the hole
 dovetailTolerance = 0.3;
-//Additional total width of the drawer front (0 matches the shelf width plus walls; 25 covers most of the drawer slide)
-drawerFrontExtraWidth = 24;
+
 
 /*[Strength Parameters]*/
 //thickness (in mm) of the shelf floor
@@ -53,9 +64,7 @@ ExportStopSnaps = true;
 slideDepth = 7.5;
 //additional space on the drawer slides for sliding room
 slideSlop = 1;
-unitsInMM = 25;
-depthInMM = shelfDepthUnits*unitsInMM;
-widthInMM = (Drawer_Width_in_Units-1)*unitsInMM;
+
 
 shelfWidthUnits = Drawer_Width_in_Units - 1; //add 1 unit to account for the slides
 
@@ -71,32 +80,49 @@ drawerMountInset = 3.6;
 
 
 /*[Slot Customization]*/
-//number of slots between multiconnect mounts
-slotSpacing = 2;
+//Offset the multiconnect on-ramps to be between grid slots rather than on the slot
+onRampHalfOffset = true;
+//Change slot orientation, when enabled slots to come from the top of the back, when disabled slots come from the bottom
+Slot_From_Top = true;
+//Distance between Multiconnect slots on the back (25mm is standard for MultiBoard)
+Custom_Distance_Between_Slots = 25;
 //QuickRelease removes the small indent in the top of the slots that lock the part into place
-dimplesEnabled = true;
+slotQuickRelease = false;
 //Dimple scale tweaks the size of the dimple in the slot for printers that need a larger dimple to print correctly
 dimpleScale = 1; //[0.5:.05:1.5]
-//Scale the size of slots in the back
-slotTolerance = 1.00; //[1:0.005:1.075]
-//Move the slot in (positive) or out (negative) - Disabled at the moment
-//slotDepthMicroadjustment = 0; //[-.5:0.05:.5]
-//enable a slot on-ramp for easy mounting of tall items
-onRampEnabled = true;
-//frequency of slots for on-ramp. 1 = every slot; 2 = every 2 slots; etc.
-onRampEveryNSlots = 2;
-//move the start of the series of on-ramps n number of slots down
-onRampOffsetNSlots = 1;
-//move the start of the slots (in mm) up (positive) or down (negative)
-slotVerticalOffset = 0;
+//Scale the size of slots in the back (1.015 scale is default for a tight fit. Increase if your finding poor fit. )
+slotTolerance = 1.00; //[0.925:0.005:1.075]
+//Move the slot (Y axis) inwards (positive) or outwards (negative)
+slotDepthMicroadjustment = 0; //[-.5:0.05:.5]
+//Enable a slot on-ramp for easy mounting of tall items
+onRampEnabled = false;
+//Frequency of slots for on-ramp. 1 = every slot; 2 = every 2 slots; etc.
+On_Ramp_Every_X_Slots = 1;
+//Distance from the back of the item holder to where the multiconnect stops (i.e., where the dimple is) (by mm)
+Multiconnect_Stop_Distance_From_Back = 13;
 
-
+onRampEveryXSlots = On_Ramp_Every_X_Slots;
 /*[Debug]*/
 //If the front is detached, show the fit. Do not print in this orientation. 
 drawerDovetailTest = false;
 slideFitTest = false; 
 
 /*[Hidden]*/
+
+distanceBetweenSlots = 
+    Mounting_Surface == "Multiboard" ? 25 : 
+    Mounting_Surface == "openGrid" ? 28 : 
+    Custom_Distance_Between_Slots;
+
+//Additional total width of the drawer front (0 matches the shelf width plus walls; 25 covers most of the drawer slide)
+drawerFrontExtraWidth = distanceBetweenSlots - 1;
+
+edgeRounding = 0;
+
+unitsInMM = distanceBetweenSlots;
+depthInMM = shelfDepthUnits*unitsInMM;
+widthInMM = (Drawer_Width_in_Units-1)*unitsInMM;
+
 drawerDimpleRadius = 1;
 drawerDimpleHeight = 7.5;
 drawerDimpleInset = 5; 
@@ -109,8 +135,11 @@ slideLockTolerance = 0.15;
 //slot settings hidden
 //Slot type. Backer is for vertical mounting. Passthru for horizontal mounting.
 slotType = "Backer"; //[Backer, Passthru]
-//ADVANCED: Distance between Multiconnect slots on the back (25mm is standard for MultiBoard)
-distanceBetweenSlots = 25;
+
+Backer_Only_Mode = false;
+Backer_Negatives_Only = false; //If true, the backer will be negative space. If false, the backer will be positive space.
+//Set to 0 to use the default thickness of the back. Set to a number to force the back to be that thickness.
+Force_Back_Thickness = 0; //0.1
 
 ///*[Passthru-Style Slot Customization]*/
 //change slot orientation
@@ -128,19 +157,19 @@ dimpleOffset = 0;
 
 //drawer
 if(ExportDrawer) diff("remove"){
-    up(baseThickness) rect_tube(size=[shelfWidthUnits*25-slideSlop,shelfDepthUnits*25], wall=wallThickness, h=shelfHeight, anchor=BOT){
+    up(baseThickness) rect_tube(size=[shelfWidthUnits*distanceBetweenSlots-slideSlop,shelfDepthUnits*distanceBetweenSlots], wall=wallThickness, h=shelfHeight, anchor=BOT){
         //slide sides
         tag("keep") down(6.5-drawerPlateClearance) attach([LEFT, RIGHT], BOT, align=TOP) 
-                tag("") prismoid(size1=[shelfDepthUnits*25,slideDepth*2+0.25], size2=[shelfDepthUnits*25,0], h=slideDepth+0.25){
+                tag("") prismoid(size1=[shelfDepthUnits*distanceBetweenSlots,slideDepth*2+0.25], size2=[shelfDepthUnits*distanceBetweenSlots,0], h=slideDepth+0.25){
                     //drawer dimple
                     attach(FRONT, CENTER+FRONT, align=[LEFT, RIGHT], inset=drawerDimpleInset, shiftout = -drawerDimpleRadius) 
                         force_tag("remove") 
                             cyl(h= 10.9, r = drawerDimpleRadius*drawerDimpleSlideToDrawerRatio, $fn=30);
                 }
         //drawer bottom
-        if (bottomType == "Solid") tag("keep")attach(BOT, TOP) cuboid([shelfWidthUnits*25-slideSlop,shelfDepthUnits*25,baseThickness]);
+        if (bottomType == "Solid") tag("keep")attach(BOT, TOP) cuboid([shelfWidthUnits*distanceBetweenSlots-slideSlop,shelfDepthUnits*distanceBetweenSlots,baseThickness]);
         if (bottomType == "Hex") tag("keep") attach(BOT, TOP) 
-            hex_panel([shelfWidthUnits*25-slideSlop,shelfDepthUnits*25,baseThickness], strut=hexStrut < hexSpacing ? hexStrut : hexSpacing - 0.25, spacing = hexSpacing, frame = wallThickness+2);
+            hex_panel([shelfWidthUnits*distanceBetweenSlots-slideSlop,shelfDepthUnits*distanceBetweenSlots,baseThickness], strut=hexStrut < hexSpacing ? hexStrut : hexSpacing - 0.25, spacing = hexSpacing, frame = wallThickness+2);
         //upper notch drawer pull
         if (drawerPullType == "Upper Notch") tag("remove") attach(FRONT, FRONT, inside=true, shiftout=0.01, align=TOP) 
             cuboid([widthInMM/3,wallThickness+1, 10], rounding=3, edges = [BOTTOM+LEFT, BOTTOM+RIGHT]);
@@ -170,7 +199,8 @@ if(drawerFrontType == "Detached Dovetail" && ExportDrawerFront){
         left(0) //front face placement for export
         //drawer front wall
         up(drawerDovetailTest ? 0 :  wallThickness/2)
-            cuboid([widthInMM+drawerFrontExtraWidth, wallThickness, shelfHeight+baseThickness], anchor=BOT, spin=[drawerDovetailTest ? 0 : 90,0,0]){
+            xrot(drawerDovetailTest ? 0 : 90) //spinremoval
+            cuboid([widthInMM+drawerFrontExtraWidth, wallThickness, shelfHeight+baseThickness], anchor=BOT){
         //dovetails
         up(baseThickness/2)attach(BACK, BOT, align=[LEFT, RIGHT], inset=(drawerMountConeMax+3)/2+wallThickness-drawerMountConeMin/2+drawerFrontExtraWidth/2+slideSlop/2+dovetailTolerance/2) 
             prismoid(size1=[drawerMountConeMin-dovetailTolerance, shelfHeight], size2=[drawerMountConeMax-dovetailTolerance, shelfHeight], h=drawerMountConeDepth-dovetailTolerance/2);
@@ -188,36 +218,39 @@ if(drawerFrontType == "Detached Dovetail" && ExportDrawerFront){
 if(ExportSlides)
 diff(){
     up(slideFitTest ? shelfHeight+baseThickness-6.5/2-drawerPlateClearance-slideDepth*2+0.5 : 0)
-    xcopies(n = 2, spacing = slideFitTest ? widthInMM+ 25 + slideSlop*2 : widthInMM+slideDepth*2+30)
-    cuboid(size = [25,depthInMM,slideDepth*2], anchor=BOT){
+    xcopies(n = 2, spacing = slideFitTest ? widthInMM+ distanceBetweenSlots + slideSlop*2 : widthInMM+slideDepth*2+30)
+    cuboid(size = [distanceBetweenSlots,depthInMM,slideDepth*2], anchor=BOT){
         //slide slots
         attach([LEFT, RIGHT], BOT, align=TOP, inside=true, shiftout=0.01) 
             tag("remove") 
                 diff("slideDimple")
-                prismoid(size1=[shelfDepthUnits*25,slideDepth*2+0.25], size2=[shelfDepthUnits*25+1,0], h=slideDepth+0.25){
+                prismoid(size1=[shelfDepthUnits*distanceBetweenSlots,slideDepth*2+0.25], size2=[shelfDepthUnits*distanceBetweenSlots+1,0], h=slideDepth+0.25){
                     attach(FRONT, CENTER+FRONT, align=[LEFT, RIGHT], inset=drawerDimpleInset, shiftout = -drawerDimpleRadius+.5) 
                         tag("slideDimple") cyl(h= drawerDimpleHeight-1, r = drawerDimpleRadius, $fn=30);
 }
         //bottom cutout
         attach(BOT, BOT, inside=true, shiftout=0.01) 
-            tag("remove") prismoid(size1=[slideDepth*2, shelfDepthUnits*25], size2=[0,shelfDepthUnits*25+1], h=slideDepth);
+            tag("remove") prismoid(size1=[slideDepth*2, shelfDepthUnits*distanceBetweenSlots], size2=[0,shelfDepthUnits*distanceBetweenSlots+1], h=slideDepth);
         //distributed multiconnect slots
-        //ycopies(n=ceil(depthInMM/(slotSpacing*unitsInMM)), spacing = slotSpacing*unitsInMM, sp=[0,25,0]) attach(TOP, BACK, align=FRONT) multiconnectBacker(height = 25, width = 25, slotType = slotType, scale = slotTolerance, onRampEnabled = false, slotDimple = !slotQuickRelease, dimpleScale = dimpleScale, anchor=BOTTOM+BACK, slotOrientation=slotOrientation, spin=[0,180,0]);
         //long multiconnect slot
-        attach(TOP, BACK) 
-            multiconnectBacker(height = depthInMM, width = 25, slotType = slotType, slotTolerance = slotTolerance, onRampEnabled = true, onRampEveryNSlots = slotSpacing,slotDimple = dimplesEnabled, dimpleScale = dimpleScale, dimpleEveryNSlots = dimpleEveryNSlots, dimpleOffset = dimpleOffset, anchor=BOTTOM+BACK, slotOrientation=slotOrientation, spin=[0,180,0])
+        attach(TOP, BACK, spin=180) 
+            //yrot(180) //spinremoval
+            multiconnectBack(backHeight = depthInMM, backWidth = distanceBetweenSlots, distanceBetweenSlots = distanceBetweenSlots);
+
         //slide lock slot
-        tag("remove")attach(FRONT, BOT, align=TOP, inset = 19, shiftout=-5.99) cuboid([26, 2, 6]);
+        //tag("remove")attach(FRONT, BOT, align=TOP, inset = 19, shiftout=-5.99) cuboid([26, 2, 6]);
     }
 }
 
+//!multiconnectBack(backHeight = depthInMM, backWidth = 25, distanceBetweenSlots = distanceBetweenSlots) show_anchors();
+
 //slide lock tools
 if(ExportSlideTabs)
-xcopies(n = 2, spacing = widthInMM+slideDepth*2+30) fwd(depthInMM/2-12.5) cuboid([6 , 25,  2-slideLockTolerance], anchor=BOT);
+xcopies(n = 2, spacing = widthInMM+slideDepth*2+30) fwd(depthInMM/2-12.5) cuboid([6 , distanceBetweenSlots,  2-slideLockTolerance], anchor=BOT);
 
 //drawer stop snaps
 if(ExportStopSnaps)
-ycopies(n = 2, spacing= 25) move([widthInMM/2+50,-depthInMM/2+50,0]) snapConnectBacker(offset=1, anchor=BOT)
+ycopies(n = 2, spacing= distanceBetweenSlots) move([widthInMM/2+50,-depthInMM/2+50,0]) snapConnectBacker(offset=1, anchor=BOT)
     attach(TOP, BOT, align=FRONT, shiftout=-0.1) cuboid([6, 4, 4+drawerPlateClearance], chamfer=0.5, edges=TOP);
 
 
@@ -226,122 +259,68 @@ ycopies(n = 2, spacing= 25) move([widthInMM/2+50,-depthInMM/2+50,0]) snapConnect
 BEGIN MODULES
 */
 
-//BEGIN MODULES
-module multiconnectBacker(width, height, slotType = "Backer", distanceBetweenSlots = 25, onRampEnabled = true, onRampEveryNSlots = 1, onRampOffsetNSlots = 0, slotTolerance = 1, slotVerticalOffset = 0, backerThickness = 6.5, slotOrientation = "Vertical", slotDimple = true, dimpleScale = 1, dimpleEveryNSlots = 1, dimpleOffset = 0, dimpleCount = 999, centerMulticonnect=centerMulticonnect, onRampPassthruEnabled = onRampPassthruEnabled, anchor=CENTER, spin=0, orient=UP){
-    attachable(anchor, spin, orient, size=[width, backerThickness, height]*slotTolerance){ 
-    //Backer type
-    if (slotType == "Backer"){
-        width = width < 25 ? 25 : width; //if width is less than 25, force 25 to ensure at least 1 slot
-        diff("slot"){
-        cuboid([width, backerThickness, height]);
-            xcopies(n = floor(width/distanceBetweenSlots), spacing = distanceBetweenSlots)
-                tag("slot") 
-                    down((13-10.15-slotVerticalOffset)*slotTolerance) attach(TOP, TOP, inside=true, align=FRONT, shiftout=0.01) 
-                        scale(slotTolerance) 
-                            multiconnectRoundedEnd(slotDimple = slotDimple, dimpleScale = dimpleScale, anchor=BOT+BACK)
-                                up(0.1) attach(BOT, TOP, overlap=0.01) 
-                                    multiconnectSlot(length = height, slotType = slotType, slotDimple = dimplesEnabled, distanceBetweenSlots = distanceBetweenSlots, onRampEnabled = onRampEnabled, onRampEveryNSlots = onRampEveryNSlots, onRampOffsetNSlots = onRampOffsetNSlots, anchor=FRONT, dimpleScale = dimpleScale, dimpleEveryNSlots = dimpleEveryNSlots, dimpleOffset = dimpleOffset, dimpleCount=dimpleCount);
-        }
-    }
-    //Passthru type
-    else {
-        diff("slot"){
-                cuboid([width, backerThickness, height]){
-                if (slotOrientation == "Vertical") {
-                    xcopies(n = floor(width/distanceBetweenSlots), spacing = distanceBetweenSlots)
-                        tag("slot") 
-                            attach(TOP, TOP, inside=true, align=FRONT, shiftout = 0.01) multiconnectSlot(length = height, slotType = slotType, onRampEnabled = onRampEnabled, onRampEveryNSlots = onRampEveryNSlots, onRampOffsetNSlots = onRampOffsetNSlots, slotDimple = dimplesEnabled,  dimpleEveryNSlots = dimpleEveryNSlots, dimpleOffset = dimpleOffset, onRampPassthruEnabled = onRampPassthruEnabled, anchor=FRONT);
-                }
-                else { 
-                    zcopies(n = floor(height/distanceBetweenSlots), spacing = distanceBetweenSlots)
-                    tag("slot") 
-                        attach(LEFT, TOP, inside=true, align=FRONT, shiftout = 0.01) back(10.15)
-                            multiconnectSlot(length = width+1, slotType = slotType, onRampEnabled = onRampEnabled, onRampEveryNSlots = onRampEveryNSlots, onRampOffsetNSlots = onRampOffsetNSlots, slotDimple = dimplesEnabled, dimpleEveryNSlots = dimpleEveryNSlots, dimpleOffset = dimpleOffset, onRampPassthruEnabled = onRampPassthruEnabled, anchor=FRONT, spin=90);
-                }
-                }
-            }
-    }
-        children();
-    }
-
-    //round top
-    module multiconnectRoundedEnd(slotDimple = true, dimpleScale = 1, anchor=CENTER, spin=0, orient=UP){
-        attachable(anchor, spin, orient, size=[10.15*2,4.15,10.15]){
-            down(10.15/2)
-            //top_half() 
-            diff("slotDimple"){
-                multiconnectRounded()
-                if(slotDimple) tag("slotDimple")attach(BACK, BOT, inside=true, shiftout=0.01) cylinder(h = 1.5*dimpleScale, r1 = 1.5*dimpleScale, r2 = 0, $fn = 50);
-            }
-            children();
-        }
-        module multiconnectRounded(anchor=CENTER, spin=0, orient=UP){
-            attachable(anchor, spin, orient, size=[10.15*2,4.15,20.3]){
-                down(0) back(4.15/2)
-                    top_half()
-                        rotate(a = [90,0,0,]) 
-                            rotate_extrude($fn=50) 
-                                polygon(points = [[0,0],[10.15,0],[10.15,1.2121],[7.65,3.712],[7.65,4.15],[0,4.15]]);
-                children();
-            }
-        }//End multiconnectRounded
-    }
-
-    module multiconnectSlot(length, slotType = "Backer", distanceBetweenSlots = 25, onRampEnabled = true, onRampEveryNSlots = 1, onRampOffsetNSlots = 0, slotDimple = true, dimpleScale = 1, dimpleEveryNSlots = 1, dimpleOffset = 0, dimpleCount = 999, onRampPassthruEnabled = false, anchor=CENTER, spin=0, orient=UP){
-        attachable(anchor, spin, orient, size=[10.15*2,4.15,length]){
-            diff("slotDimple"){
-                multiconnectLinear(length = length, slotType = slotType, distanceBetweenSlots = distanceBetweenSlots, onRampEnabled = onRampEnabled, onRampEveryNSlots = onRampEveryNSlots, onRampOffsetNSlots = onRampOffsetNSlots, onRampPassthruEnabled = onRampPassthruEnabled);
-                if(slotDimple && dimpleEveryNSlots != 0 && slotType == "Backer") {
-                    //calculate the dimples. Dimplecount can override if less than calculated slots
-                    echo("Dimples for Backer");
-                    tag("slotDimple") attach(BACK, BOT, align=TOP, inside=true, shiftout=0.01) back(1.5*dimpleScale) 
-                            cylinder(h = 1.5*dimpleScale, r1 = 1.5*dimpleScale, r2 = 0, $fn = 50);
-                    zcopies(n = min(length/distanceBetweenSlots/dimpleEveryNSlots+1, dimpleCount), spacing = -distanceBetweenSlots*dimpleEveryNSlots, sp=[0,0,dimpleOffset*distanceBetweenSlots]) 
-                        tag("slotDimple") attach(BACK, BOT, align=TOP, inside=true, shiftout=0.01) back(1.5*dimpleScale) 
-                            cylinder(h = 1.5*dimpleScale, r1 = 1.5*dimpleScale, r2 = 0, $fn = 50);
-                }
-                if(slotDimple && dimpleEveryNSlots != 0 && slotType == "Passthru"){ //passthru
-                    //calculate the dimples. Dimplecount can override if less than calculated slots
-                    echo("Dimples for Passthru");
-                    zcopies(n = min(length/distanceBetweenSlots/dimpleEveryNSlots+2, dimpleCount), spacing = -distanceBetweenSlots*dimpleEveryNSlots, sp=[0,0,centerMulticonnect ? -length/2+25*3/2-12.5+25+dimpleOffset*distanceBetweenSlots: -length/2+25*3/2+25+dimpleOffset*distanceBetweenSlots]) 
-                        tag("slotDimple") attach(BACK, BOT, align=TOP, inside=true, shiftout=0.01) back(1.5*dimpleScale) 
-                            cylinder(h = 1.5*dimpleScale, r1 = 1.5*dimpleScale, r2 = 0, $fn = 50);
-
-                }
-            
-            }
-            children();
-        }
-        //long slot
-        module multiconnectLinear(length, slotType = "Backer", distanceBetweenSlots = 25, onRampEnabled = true, onRampEveryNSlots = 1, onRampOffsetNSlots = 0, onRampPassthruEnabled = false, anchor=CENTER, spin=0, orient=UP){
-            attachable(anchor, spin, orient, size=[10.15*2,4.15,length]){
-                up(length/2) back(4.15/2) 
-                intersection() {
-                    union(){
-                        rotate(a = [180,0,0]) 
-                            linear_extrude(height = length) 
-                                union(){
-                                    polygon(points = [[0,0],[10.15,0],[10.15,1.2121],[7.65,3.712],[7.65,4.15],[0,4.15]]);
-                                        mirror([1,0,0])
-                                            polygon(points = [[0,0],[10.15,0],[10.15,1.2121],[7.65,3.712],[7.65,4.15],[0,4.15]]);
-                                }
-                        //onramp
-                        if(onRampEnabled && onRampEveryNSlots != 0 && slotType == "Backer") {
-                                zcopies(spacing=-distanceBetweenSlots*onRampEveryNSlots, n=length/distanceBetweenSlots/onRampEveryNSlots+1, sp=[0,0,-distanceBetweenSlots-onRampOffsetNSlots*distanceBetweenSlots]) 
-                                    fwd(4.15/2) color("orange") 
-                                        cyl(h = 4.15, r1 = 12, r2 = 10.15, spin=([90,0,180]));
-                        } 
-                        if(onRampPassthruEnabled && onRampEveryNSlots != 0 && slotType == "Passthru"){
-                                zcopies(spacing=-distanceBetweenSlots*onRampEveryNSlots, n=length/distanceBetweenSlots+2, sp=[0,0,centerMulticonnect ? -length/2+25*3/2-12.5+25: -length/2+25*3/2+25]) 
-                                    fwd(4.15/2) color("orange") 
-                                        cyl(h = 4.15, r1 = 12, r2 = 10.15, spin=([90,0,180]));
-                        }                    
+//BEGIN NEW MODULES
+module multiconnectBack(backWidth, backHeight, distanceBetweenSlots, slotStopFromBack = 13, anchor=CENTER,spin=0,orient=UP)
+{
+    //slot count calculates how many slots can fit on the back. Based on internal width for buffer. 
+    //slot width needs to be at least the distance between slot for at least 1 slot to generate
+    tag_scope()
+    let (backWidth = max(backWidth,distanceBetweenSlots), backHeight = max(backHeight, distanceBetweenSlots),slotCount = floor(backWidth/distanceBetweenSlots), backThickness = Force_Back_Thickness == 0 ? 6.5 : Force_Back_Thickness){
+        diff() {
+            tag(Backer_Negatives_Only ? "remove" : "")
+                cuboid(size = [backWidth,backThickness,backHeight], rounding=edgeRounding, except_edges=BACK, anchor=FRONT+LEFT+BOT){
+                    children(); //pass through attachables for this object
+            //Loop through slots and center on the item
+            //Note: I kept doing math until it looked right. It's possible this can be simplified.
+            for (slotNum = [0:1:slotCount-1]) {
+                force_tag("remove")    
+                    translate(v = [0,2.35-1,backHeight/2-slotStopFromBack]){
+                        slotTool(backHeight);
                     }
-                    //lop off any extra zcopies pieces
-                    cuboid([25,25, length], anchor=TOP);
-                }
-                children();
             }
+                    }
+
+        }
+    }
+    //Create Slot Tool
+    module slotTool(totalDepth) {
+        //In slotTool, added a new variable distanceOffset which is set by the option:
+        distanceOffset = onRampHalfOffset ? distanceBetweenSlots / 2 : 0;
+
+        tag_scope()
+        scale(v = slotTolerance)
+        //slot minus optional dimple with optional on-ramp
+        let (slotProfile = [[0,0],[10.15,0],[10.15,1.2121],[7.65,3.712],[7.65,5],[0,5]])
+        difference() {
+            union() {
+                //round top
+                rotate(a = [90,0,0,]) 
+                    rotate_extrude($fn=50) 
+                        polygon(points = slotProfile);
+                //long slot
+                translate(v = [0,0,0]) 
+                    rotate(a = [180,0,0]) 
+                    linear_extrude(height = totalDepth+1) 
+                        union(){
+                            polygon(points = slotProfile);
+                            mirror([1,0,0])
+                                polygon(points = slotProfile);
+                        }
+                //on-ramp
+                if(onRampEnabled)
+                    for(y = [1:onRampEveryXSlots:totalDepth/distanceBetweenSlots])
+                        //then modify the translate within the on-ramp code to include the offset
+                        translate(v = [0,-5,(-y*distanceBetweenSlots)+distanceOffset])
+                            rotate(a = [-90,0,0]) 
+                                cylinder(h = 5, r1 = 12, r2 = 10.15);
+            }
+            //dimple
+            if (slotQuickRelease == false)
+                zcopies(spacing = -distanceBetweenSlots, n = totalDepth/distanceBetweenSlots, sp = 0)
+                scale(v = dimpleScale) 
+                rotate(a = [90,0,0,]) 
+                    rotate_extrude($fn=50) 
+                        polygon(points = [[0,0],[0,1.5],[1.5,0]]);
         }
     }
 }
@@ -371,7 +350,8 @@ module snapConnectBacker(offset = 0, holdingTolerance=1, anchor=CENTER, spin=0, 
             
             //end base
             //bumpouts
-            attach([RIGHT, LEFT, FWD, BACK],LEFT, shiftout=-0.01)  color("green") down(0.87) fwd(1)scale([1,1,holdingTolerance])offset_sweep(path = bumpout, height=3, spin=[0,270,0]);
+             //spinremoval
+            attach([RIGHT, LEFT, FWD, BACK],LEFT, shiftout=-0.01)  color("green") down(0.87) fwd(1)scale([1,1,holdingTolerance]) zrot(270) offset_sweep(path = bumpout, height=3);
             //delete tools
             //Bottom and side cutout - 2 cubes that form an L (cut from bottom and from outside) and then rotated around the side
             tag("remove") 
