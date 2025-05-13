@@ -95,7 +95,7 @@ slotTolerance = 1.00; //[0.925:0.005:1.075]
 //Move the slot (Y axis) inwards (positive) or outwards (negative)
 slotDepthMicroadjustment = 0; //[-.5:0.05:.5]
 //Enable a slot on-ramp for easy mounting of tall items
-onRampEnabled = false;
+onRampEnabled = true;
 //Frequency of slots for on-ramp. 1 = every slot; 2 = every 2 slots; etc.
 On_Ramp_Every_X_Slots = 1;
 //Distance from the back of the item holder to where the multiconnect stops (i.e., where the dimple is) (by mm)
@@ -108,7 +108,7 @@ drawerDovetailTest = false;
 slideFitTest = false; 
 
 /*[Hidden]*/
-
+partColor = "white";
 distanceBetweenSlots = 
     Mounting_Surface == "Multiboard" ? 25 : 
     Mounting_Surface == "openGrid" ? 28 : 
@@ -351,13 +351,20 @@ module snapConnectBacker(offset = 0, holdingTolerance=1, anchor=CENTER, spin=0, 
             //end base
             //bumpouts
              //spinremoval
-            attach([RIGHT, LEFT, FWD, BACK],LEFT, shiftout=-0.01)  color("green") down(0.87) fwd(1)scale([1,1,holdingTolerance]) zrot(270) offset_sweep(path = bumpout, height=3);
+            attach([RIGHT, LEFT, FWD, BACK],LEFT, shiftout=-0.01)  
+            //color("green") 
+                down(0.87) fwd(1)
+                    scale([1,1,holdingTolerance]) 
+                        zrot(270) 
+                            offset_sweep(path = bumpout, height=3);
             //delete tools
             //Bottom and side cutout - 2 cubes that form an L (cut from bottom and from outside) and then rotated around the side
             tag("remove") 
                  align(BOTTOM, [RIGHT, BACK, LEFT, FWD], inside=true, shiftout=0.01, inset = 1.6) 
-                    color("lightblue") cuboid([0.8,7.161,3.4], spin=90*$idx)
-                        align(RIGHT, [TOP]) cuboid([0.8,7.161,1], anchor=BACK);
+                    //color("lightblue") 
+                    cuboid([0.8,7.161,3.4], spin=90*$idx)
+                        align(RIGHT, [TOP]) 
+                            cuboid([0.8,7.161,1], anchor=BACK);
             }
     }
     children();
