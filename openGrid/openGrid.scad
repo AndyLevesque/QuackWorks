@@ -33,9 +33,9 @@ Credit to
 include <BOSL2/std.scad>
 
 /*[Board Size]*/
-Full_or_Lite = "Lite";//[Full, Lite]
+Full_or_Lite = "Lite"; //[Full, Lite]
 Board_Width = 2;
-Board_Height= 2;
+Board_Height = 2;
 
 /*[Style and Mounting Options]*/
 //Screw holes for mounting -  
@@ -68,11 +68,11 @@ Tile_Thickness = 6.8;
 //Stacking more than 6 tiles may time out. Desktop version recommended for larger stacks.
 Stack_Count = 1;
 //Use Interface Layer if you have a multimaterial printer or AMS to alternative PLA and PETG. Use Ironing for single-material printing and ironing of top-layer.
-Stacking_Method = "Interface Layer";//[Interface Layer, Ironing - BETA]
+Stacking_Method = "Interface Layer"; //[Interface Layer, Ironing - BETA]
 //Thickness of the interface between tiles. This is the distance between the top of the tile and the bottom of the next tile.
-Interface_Thickness = 0.4; 
+Interface_Thickness = 0.4;
 //Distance between the interface and the tile. This is the distance between the top of the tile and the bottom of the interface. Try to use a multiple of the layer height when combined with the interface thickness.
-Interface_Separation = 0.1; 
+Interface_Separation = 0.1;
 
 /*[Beta - Fill Space]*/
 Fill_Space_Mode = "None"; //[None, Complete Tiles Only, Fill Available Space]
@@ -82,491 +82,478 @@ Max_Tile_Width = 8;
 Max_Tile_Depth = 8;
 Tile_Spacing = 5;
 
-adjustedInterfaceThickness = 
-    Stacking_Method == "Interface Layer" ? Interface_Thickness : 0;
+adjustedInterfaceThickness =
+  Stacking_Method == "Interface Layer" ? Interface_Thickness : 0;
 
-if(Fill_Space_Mode == "Complete Tiles Only")
-    FillSpaceFullTiles();
-if(Fill_Space_Mode == "Fill Available Space")
-    FillSpaceClipOneSide();
-
+if (Fill_Space_Mode == "Complete Tiles Only")
+  FillSpaceFullTiles();
+if (Fill_Space_Mode == "Fill Available Space")
+  FillSpaceClipOneSide();
 
 //GENERATE SINGLE TILES
-if(Fill_Space_Mode == "None"){
-    if(Full_or_Lite == "Full" && Stack_Count == 1) openGrid(Board_Width = Board_Width, Board_Height = Board_Height, tileSize = Tile_Size, Tile_Thickness = Tile_Thickness, Screw_Mounting = Screw_Mounting, Chamfers = Chamfers, anchor=BOT, Connector_Holes = Connector_Holes);
-    if(Full_or_Lite == "Lite" && Stack_Count == 1) openGridLite(Board_Width = Board_Width, Board_Height = Board_Height, tileSize = Tile_Size,  Screw_Mounting = Screw_Mounting, Chamfers = Chamfers, anchor=BOT, Connector_Holes = Connector_Holes);
+if (Fill_Space_Mode == "None") {
+  if (Full_or_Lite == "Full" && Stack_Count == 1) openGrid(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Tile_Thickness=Tile_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, anchor=BOT, Connector_Holes=Connector_Holes);
+  if (Full_or_Lite == "Lite" && Stack_Count == 1) openGridLite(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, anchor=BOT, Connector_Holes=Connector_Holes);
 
+  //GENERATE STACKED TILES
+  if (Full_or_Lite == "Full" && Stack_Count > 1) {
+    zcopies(spacing=Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=Stack_Count, sp=[0, 0, Tile_Thickness])
+      zflip()
+        openGrid(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Tile_Thickness=Tile_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, anchor=BOT, Connector_Holes=Connector_Holes);
+    if (Stacking_Method == "Interface Layer")
+      zcopies(spacing=Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=Stack_Count - 1, sp=[0, 0, Tile_Thickness + Interface_Separation])
+        color("red") interfaceLayer(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Tile_Thickness=Tile_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, boardType="Full", anchor=BOT);
+  }
 
-    //GENERATE STACKED TILES
-    if(Full_or_Lite == "Full" && Stack_Count > 1){
-        zcopies(spacing = Tile_Thickness + adjustedInterfaceThickness + 2*Interface_Separation, n=Stack_Count, sp=[0,0,Tile_Thickness])
-            zflip()
-            openGrid(Board_Width = Board_Width, Board_Height = Board_Height, tileSize = Tile_Size, Tile_Thickness = Tile_Thickness, Screw_Mounting = Screw_Mounting, Chamfers = Chamfers, anchor=BOT, Connector_Holes = Connector_Holes);
-        if(Stacking_Method == "Interface Layer")
-            zcopies(spacing = Tile_Thickness + adjustedInterfaceThickness + 2*Interface_Separation, n=Stack_Count-1, sp=[0,0,Tile_Thickness + Interface_Separation])
-                color("red") interfaceLayer(Board_Width = Board_Width, Board_Height = Board_Height, tileSize = Tile_Size, Tile_Thickness = Tile_Thickness, Screw_Mounting = Screw_Mounting, Chamfers = Chamfers, boardType = "Full", anchor=BOT);
-    }
-
-    if(Full_or_Lite == "Lite" && Stack_Count > 1){
-        Lite_Tile_Thickness = 4;
-        zcopies(spacing = Lite_Tile_Thickness + adjustedInterfaceThickness + 2*Interface_Separation, n=Stack_Count, sp=[0,0,Lite_Tile_Thickness])
-            openGridLite(Board_Width = Board_Width, Board_Height = Board_Height, tileSize = Tile_Size,  Screw_Mounting = Screw_Mounting, Chamfers = Chamfers, Connector_Holes = Connector_Holes, anchor=$idx % 2 == 0 ? TOP : BOT, orient=$idx % 2 == 0 ? UP : DOWN);
-        if(Stacking_Method == "Interface Layer") 
-            zcopies(spacing = Lite_Tile_Thickness + adjustedInterfaceThickness + 2*Interface_Separation, n=Stack_Count-1, sp=[0,0,Lite_Tile_Thickness + Interface_Separation])
-                color("red") interfaceLayer2D(Board_Width = Board_Width, Board_Height = Board_Height, tileSize = Tile_Size, Tile_Thickness = Tile_Thickness, Screw_Mounting = Screw_Mounting, Chamfers = Chamfers, boardType = "Lite", topSide = $idx % 2 == 0 ? false : true);
-    }
+  if (Full_or_Lite == "Lite" && Stack_Count > 1) {
+    Lite_Tile_Thickness = 4;
+    zcopies(spacing=Lite_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=Stack_Count, sp=[0, 0, Lite_Tile_Thickness])
+      openGridLite(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, Connector_Holes=Connector_Holes, anchor=$idx % 2 == 0 ? TOP : BOT, orient=$idx % 2 == 0 ? UP : DOWN);
+    if (Stacking_Method == "Interface Layer")
+      zcopies(spacing=Lite_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=Stack_Count - 1, sp=[0, 0, Lite_Tile_Thickness + Interface_Separation])
+        color("red") interfaceLayer2D(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Tile_Thickness=Tile_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, boardType="Lite", topSide=$idx % 2 == 0 ? false : true);
+  }
 }
 
-module interfaceLayer(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, Screw_Mounting = "None", Chamfers = "None", Connector_Holes = false, anchor=CENTER, spin=0, orient=UP, boardType = "Full"){
-    linear_extrude(height = Interface_Thickness) 
-        projection(cut=true)
-            interfaceLayer2D(Board_Width = Board_Width, Board_Height = Board_Height, tileSize = tileSize, Tile_Thickness = Tile_Thickness, Screw_Mounting = Screw_Mounting, Chamfers = Chamfers, boardType = boardType);
+module interfaceLayer(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, Screw_Mounting = "None", Chamfers = "None", Connector_Holes = false, anchor = CENTER, spin = 0, orient = UP, boardType = "Full") {
+  linear_extrude(height=Interface_Thickness)
+    projection(cut=true)
+      interfaceLayer2D(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=tileSize, Tile_Thickness=Tile_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, boardType=boardType);
 }
 
-module interfaceLayer2D(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, Screw_Mounting = "None", Chamfers = "None", Connector_Holes = false, anchor=CENTER, spin=0, orient=UP, boardType = "Full", topSide = false){
-    linear_extrude(height = Interface_Thickness) 
-        projection(cut=true)
-            //bottom_half(z = 0.1, s = max(tileSize * Board_Width, tileSize * Board_Height) * 2)
-            if (boardType == "Lite") {
-                down(0.01)
-                openGridLite(
-                    Board_Width = Board_Width,
-                    Board_Height = Board_Height,
-                    tileSize = tileSize,
-                    Screw_Mounting = Screw_Mounting,
-                    Chamfers = Chamfers,
-                    Connector_Holes = Connector_Holes,
-                    anchor=topSide ? BOT : TOP,
-                    orient=topSide ? UP : DOWN
-                );
-            } else {
-                openGrid(
-                    Board_Width = Board_Width,
-                    Board_Height = Board_Height,
-                    tileSize = tileSize,
-                    Tile_Thickness = Tile_Thickness,
-                    Screw_Mounting = Screw_Mounting,
-                    Chamfers = Chamfers,
-                    Connector_Holes = Connector_Holes,
-                    anchor=BOT
-                );
-            }
+module interfaceLayer2D(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, Screw_Mounting = "None", Chamfers = "None", Connector_Holes = false, anchor = CENTER, spin = 0, orient = UP, boardType = "Full", topSide = false) {
+  linear_extrude(height=Interface_Thickness)
+    projection(cut=true)
+    //bottom_half(z = 0.1, s = max(tileSize * Board_Width, tileSize * Board_Height) * 2)
+    if (boardType == "Lite") {
+      down(0.01)
+        openGridLite(
+          Board_Width=Board_Width,
+          Board_Height=Board_Height,
+          tileSize=tileSize,
+          Screw_Mounting=Screw_Mounting,
+          Chamfers=Chamfers,
+          Connector_Holes=Connector_Holes,
+          anchor=topSide ? BOT : TOP,
+          orient=topSide ? UP : DOWN
+        );
+    } else {
+      openGrid(
+        Board_Width=Board_Width,
+        Board_Height=Board_Height,
+        tileSize=tileSize,
+        Tile_Thickness=Tile_Thickness,
+        Screw_Mounting=Screw_Mounting,
+        Chamfers=Chamfers,
+        Connector_Holes=Connector_Holes,
+        anchor=BOT
+      );
+    }
 }
 module openGridLite(Board_Width, Board_Height, tileSize = 28, Screw_Mounting = "None", Chamfers = "None", anchor = CENTER, spin = 0, orient = UP, Connector_Holes = false) {
-    // Screw_Mounting options: [Everywhere, Corners, None]
-    // Bevel options: [Everywhere, Corners, None]
-    Tile_Thickness = 6.8;
-    Lite_Tile_Thickness = 4;
-    
-    attachable(anchor, spin, orient, size = [Board_Width * tileSize, Board_Height * tileSize, 4]) {
-        render(convexity = 2)
-        down(4 / 2)
+  // Screw_Mounting options: [Everywhere, Corners, None]
+  // Bevel options: [Everywhere, Corners, None]
+  Tile_Thickness = 6.8;
+  Lite_Tile_Thickness = 4;
+
+  attachable(anchor, spin, orient, size=[Board_Width * tileSize, Board_Height * tileSize, 4]) {
+    render(convexity=2)
+      down(4 / 2)
         down(Tile_Thickness - 4)
-        top_half(z = Tile_Thickness - 4, s = max(tileSize * Board_Width, tileSize * Board_Height) * 2)
-        openGrid(
-            Board_Width = Board_Width,
-            Board_Height = Board_Height,
-            tileSize = tileSize,
-            Screw_Mounting = Screw_Mounting,
-            Chamfers = Chamfers,
-            anchor = BOT,
-            Connector_Holes = Connector_Holes
-        );
+          top_half(z=Tile_Thickness - 4, s=max(tileSize * Board_Width, tileSize * Board_Height) * 2)
+            openGrid(
+              Board_Width=Board_Width,
+              Board_Height=Board_Height,
+              tileSize=tileSize,
+              Screw_Mounting=Screw_Mounting,
+              Chamfers=Chamfers,
+              anchor=BOT,
+              Connector_Holes=Connector_Holes
+            );
     children();
-    }
+  }
 }
 
-module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, Screw_Mounting = "None", Chamfers = "None", Connector_Holes = false, anchor=CENTER, spin=0, orient=UP){
-    //Screw_Mounting options: [Everywhere, Corners, None]
-    //Bevel options: [Everywhere, Corners, None]
+module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, Screw_Mounting = "None", Chamfers = "None", Connector_Holes = false, anchor = CENTER, spin = 0, orient = UP) {
+  //Screw_Mounting options: [Everywhere, Corners, None]
+  //Bevel options: [Everywhere, Corners, None]
 
-    $fn=30;
-    //2D is fast. 3D is slow. No benefits of 3D. 
-    Render_Method = "2D";//[3D, 2D]
-    Intersection_Distance = 4.2;
-    Tile_Thickness = Tile_Thickness;
-    
-    tileChamfer = sqrt(Intersection_Distance^2*2);
-    lite_cutout_distance_from_top = 1;
-    connector_cutout_height = 2.4;
+  $fn = 30;
+  //2D is fast. 3D is slow. No benefits of 3D. 
+  Render_Method = "2D"; //[3D, 2D]
+  Intersection_Distance = 4.2;
+  Tile_Thickness = Tile_Thickness;
 
-    cornerChamfers = concat(
-        Chamfer_Bottom_Right ? [[tileSize*Board_Width/2,-tileSize*Board_Height/2,0]]: [],
-        Chamfer_Top_Right ? [[tileSize*Board_Width/2,tileSize*Board_Height/2,0]] : [],
-        Chamfer_Bottom_Left ? [[-tileSize*Board_Width/2,-tileSize*Board_Height/2,0]] : [],
-        Chamfer_Top_Left ? [[-tileSize*Board_Width/2,tileSize*Board_Height/2,0]] : []
-    );
+  tileChamfer = sqrt(Intersection_Distance ^ 2 * 2);
+  lite_cutout_distance_from_top = 1;
+  connector_cutout_height = 2.4;
 
-    attachable(anchor, spin, orient, size=[Board_Width*tileSize,Board_Height*tileSize,Tile_Thickness]){
+  cornerChamfers = concat(
+    Chamfer_Bottom_Right ? [[tileSize * Board_Width / 2, -tileSize * Board_Height / 2, 0]] : [],
+    Chamfer_Top_Right ? [[tileSize * Board_Width / 2, tileSize * Board_Height / 2, 0]] : [],
+    Chamfer_Bottom_Left ? [[-tileSize * Board_Width / 2, -tileSize * Board_Height / 2, 0]] : [],
+    Chamfer_Top_Left ? [[-tileSize * Board_Width / 2, tileSize * Board_Height / 2, 0]] : []
+  );
 
-        down(Tile_Thickness/2)
-        render(convexity=2)
-        diff(){
-            render() union() {
-                grid_copies(spacing = tileSize, n = [Board_Width, Board_Height])
+  attachable(anchor, spin, orient, size=[Board_Width * tileSize, Board_Height * tileSize, Tile_Thickness]) {
 
-                    if(Render_Method == "2D") openGridTileAp1(tileSize = tileSize, Tile_Thickness = Tile_Thickness);
-                        else wonderboardTileAp2();
-                
+    down(Tile_Thickness / 2)
+      render(convexity=2)
+        diff() {
+          render() union() {
+              grid_copies(spacing=tileSize, n=[Board_Width, Board_Height])
+
+              if (Render_Method == "2D")
+                openGridTileAp1(tileSize=tileSize, Tile_Thickness=Tile_Thickness);
+              else
+                wonderboardTileAp2();
             }
-            //TODO: Modularize positioning (Outside Corners, inside corners, inside all) and holes (chamfer and screw holes)
-            //Bevel Everywhere
-            if(Chamfers == "Everywhere" && Screw_Mounting != "Everywhere" && Screw_Mounting != "Corners")
+          //TODO: Modularize positioning (Outside Corners, inside corners, inside all) and holes (chamfer and screw holes)
+          //Bevel Everywhere
+          if (Chamfers == "Everywhere" && Screw_Mounting != "Everywhere" && Screw_Mounting != "Corners")
             tag("remove")
-                grid_copies(spacing=tileSize, size=[Board_Width*tileSize,Board_Height*tileSize])
-                    down(0.01)
-                    zrot(45)
-                        cuboid([tileChamfer,tileChamfer,Tile_Thickness+0.02], anchor=BOT);
-            //Bevel Corners
-            if(Chamfers == "Corners" || (Chamfers == "Everywhere" && (Screw_Mounting == "Everywhere" || Screw_Mounting == "Corners")))
-                tag("remove")
-                move_copies(
-                    cornerChamfers
-                    //[
-                        //[tileSize*Board_Width/2,tileSize*Board_Height/2,0],
-                        //[-tileSize*Board_Width/2,tileSize*Board_Height/2,0],
-                        //[tileSize*Board_Width/2,-tileSize*Board_Height/2,0],
-                        //[-tileSize*Board_Width/2,-tileSize*Board_Height/2,0]
-                    //]
-                    )
-                        down(0.01)
-                        zrot(45)
-                            cuboid([tileChamfer,tileChamfer,Tile_Thickness+0.02], anchor=BOT);
-            //Screw Mount Corners
-            if(Screw_Mounting == "Corners")
-                tag("remove")
-                move_copies([[tileSize*Board_Width/2-tileSize,tileSize*Board_Height/2-tileSize,0],[-tileSize*Board_Width/2+tileSize,tileSize*Board_Height/2-tileSize,0],[tileSize*Board_Width/2-tileSize,-tileSize*Board_Height/2+tileSize,0],[-tileSize*Board_Width/2+tileSize,-tileSize*Board_Height/2+tileSize,0]])
-                up(Tile_Thickness+0.01)
-                    cyl(d=Screw_Head_Diameter, h=Screw_Head_Inset > 0 ? Screw_Head_Inset : 0.01, anchor=TOP)
-                        attach(BOT, TOP) cyl(d2=Screw_Head_Diameter, d1=Screw_Diameter, h=Screw_Head_Diameter == Screw_Diameter ? 0.01 : sqrt((Screw_Head_Diameter/2-Screw_Diameter/2)^2))
-                            attach(BOT, TOP) cyl(d=Screw_Diameter, h=Tile_Thickness+0.02);
-            //Screw Mount Everywhere
-            if(Screw_Mounting == "Everywhere")
-                tag("remove")
-                grid_copies(spacing=tileSize, size=[(Board_Width-2)*tileSize,(Board_Height-2)*tileSize])            up(Tile_Thickness+0.01)
-                    cyl(d=Screw_Head_Diameter, h=Screw_Head_Inset > 0 ? Screw_Head_Inset : 0.01, anchor=TOP)
-                        attach(BOT, TOP) cyl(d2=Screw_Head_Diameter, d1=Screw_Diameter, h=Screw_Head_Diameter == Screw_Diameter ? 0.01 : sqrt((Screw_Head_Diameter/2-Screw_Diameter/2)^2))
-                            attach(BOT, TOP) cyl(d=Screw_Diameter, h=Tile_Thickness+0.02);
-            if(Connector_Holes){
-                //top and bottom connector holes
-                if(Board_Height > 1)
-                tag("remove")
-                up(Full_or_Lite == "Full" ? Tile_Thickness/2 : Tile_Thickness-connector_cutout_height/2-lite_cutout_distance_from_top){
-                    //bottom connector holes
-                    if(Connector_Holes_Right)
-                    left(-tileSize*Board_Width/2-0.005)
-                        zrot(180)
-                        ycopies(spacing=tileSize, l=Board_Height > 2 ? Board_Height*tileSize-tileSize*2 : Board_Height*tileSize - tileSize - 1)
-                            connector_cutout_delete_tool(anchor=LEFT);
-                    //xflip_copy(offset = -tileSize*Board_Width/2-0.005)
-                    //top connector holes
-                    if(Connector_Holes_Left)
-                    right(-tileSize*Board_Width/2-0.005)
-                        ycopies(spacing=tileSize, l=Board_Height > 2 ? Board_Height*tileSize-tileSize*2 : Board_Height*tileSize - tileSize - 1)
-                            connector_cutout_delete_tool(anchor=LEFT);
+              grid_copies(spacing=tileSize, size=[Board_Width * tileSize, Board_Height * tileSize])
+                down(0.01)
+                  zrot(45)
+                    cuboid([tileChamfer, tileChamfer, Tile_Thickness + 0.02], anchor=BOT);
+          //Bevel Corners
+          if (Chamfers == "Corners" || (Chamfers == "Everywhere" && (Screw_Mounting == "Everywhere" || Screw_Mounting == "Corners")))
+            tag("remove")
+              move_copies(
+                cornerChamfers
+                //[
+                //[tileSize*Board_Width/2,tileSize*Board_Height/2,0],
+                //[-tileSize*Board_Width/2,tileSize*Board_Height/2,0],
+                //[tileSize*Board_Width/2,-tileSize*Board_Height/2,0],
+                //[-tileSize*Board_Width/2,-tileSize*Board_Height/2,0]
+                //]
+              )
+                down(0.01)
+                  zrot(45)
+                    cuboid([tileChamfer, tileChamfer, Tile_Thickness + 0.02], anchor=BOT);
+          //Screw Mount Corners
+          if (Screw_Mounting == "Corners")
+            tag("remove")
+              move_copies([[tileSize * Board_Width / 2 - tileSize, tileSize * Board_Height / 2 - tileSize, 0], [-tileSize * Board_Width / 2 + tileSize, tileSize * Board_Height / 2 - tileSize, 0], [tileSize * Board_Width / 2 - tileSize, -tileSize * Board_Height / 2 + tileSize, 0], [-tileSize * Board_Width / 2 + tileSize, -tileSize * Board_Height / 2 + tileSize, 0]])
+                up(Tile_Thickness + 0.01)
+                  cyl(d=Screw_Head_Diameter, h=Screw_Head_Inset > 0 ? Screw_Head_Inset : 0.01, anchor=TOP)
+                    attach(BOT, TOP) cyl(d2=Screw_Head_Diameter, d1=Screw_Diameter, h=Screw_Head_Diameter == Screw_Diameter ? 0.01 : sqrt((Screw_Head_Diameter / 2 - Screw_Diameter / 2) ^ 2))
+                        attach(BOT, TOP) cyl(d=Screw_Diameter, h=Tile_Thickness + 0.02);
+          //Screw Mount Everywhere
+          if (Screw_Mounting == "Everywhere")
+            tag("remove")
+              grid_copies(spacing=tileSize, size=[(Board_Width - 2) * tileSize, (Board_Height - 2) * tileSize]) up(Tile_Thickness + 0.01)
+                  cyl(d=Screw_Head_Diameter, h=Screw_Head_Inset > 0 ? Screw_Head_Inset : 0.01, anchor=TOP)
+                    attach(BOT, TOP) cyl(d2=Screw_Head_Diameter, d1=Screw_Diameter, h=Screw_Head_Diameter == Screw_Diameter ? 0.01 : sqrt((Screw_Head_Diameter / 2 - Screw_Diameter / 2) ^ 2))
+                        attach(BOT, TOP) cyl(d=Screw_Diameter, h=Tile_Thickness + 0.02);
+          if (Connector_Holes) {
+            //top and bottom connector holes
+            if (Board_Height > 1)
+              tag("remove")
+                up(Full_or_Lite == "Full" ? Tile_Thickness / 2 : Tile_Thickness - connector_cutout_height / 2 - lite_cutout_distance_from_top) {
+                  //bottom connector holes
+                  if (Connector_Holes_Right)
+                    left(-tileSize * Board_Width / 2 - 0.005)
+                      zrot(180)
+                        ycopies(spacing=tileSize, l=Board_Height > 2 ? Board_Height * tileSize - tileSize * 2 : Board_Height * tileSize - tileSize - 1)
+                          connector_cutout_delete_tool(anchor=LEFT);
+                  //xflip_copy(offset = -tileSize*Board_Width/2-0.005)
+                  //top connector holes
+                  if (Connector_Holes_Left)
+                    right(-tileSize * Board_Width / 2 - 0.005)
+                      ycopies(spacing=tileSize, l=Board_Height > 2 ? Board_Height * tileSize - tileSize * 2 : Board_Height * tileSize - tileSize - 1)
+                        connector_cutout_delete_tool(anchor=LEFT);
                 }
-                //right and left connector holes
-                if(Board_Width > 1)
-                tag("remove")
-                up(Full_or_Lite == "Full" ? Tile_Thickness/2 : Tile_Thickness-connector_cutout_height/2-lite_cutout_distance_from_top){
-                    //right connector holes
-                    if(Connector_Holes_Top)
-                    fwd(-tileSize*Board_Height/2-0.005)
-                        xcopies(spacing=tileSize, l=Board_Width > 2 ? Board_Width*tileSize-tileSize*2 : Board_Width*tileSize-tileSize-1)
-                            zrot(-90)
-                                connector_cutout_delete_tool(anchor=LEFT);
-                    //yflip_copy(offset = -tileSize*Board_Height/2-0.005)
-                    //left connector holes
-                    if(Connector_Holes_Bottom)
-                    back(-tileSize*Board_Height/2-0.005)
-                        xcopies(spacing=tileSize, l=Board_Width > 2 ? Board_Width*tileSize-tileSize*2 : Board_Width*tileSize-tileSize-1)
-                            zrot(90)
-                                connector_cutout_delete_tool(anchor=LEFT);
+            //right and left connector holes
+            if (Board_Width > 1)
+              tag("remove")
+                up(Full_or_Lite == "Full" ? Tile_Thickness / 2 : Tile_Thickness - connector_cutout_height / 2 - lite_cutout_distance_from_top) {
+                  //right connector holes
+                  if (Connector_Holes_Top)
+                    fwd(-tileSize * Board_Height / 2 - 0.005)
+                      xcopies(spacing=tileSize, l=Board_Width > 2 ? Board_Width * tileSize - tileSize * 2 : Board_Width * tileSize - tileSize - 1)
+                        zrot(-90)
+                          connector_cutout_delete_tool(anchor=LEFT);
+                  //yflip_copy(offset = -tileSize*Board_Height/2-0.005)
+                  //left connector holes
+                  if (Connector_Holes_Bottom)
+                    back(-tileSize * Board_Height / 2 - 0.005)
+                      xcopies(spacing=tileSize, l=Board_Width > 2 ? Board_Width * tileSize - tileSize * 2 : Board_Width * tileSize - tileSize - 1)
+                        zrot(90)
+                          connector_cutout_delete_tool(anchor=LEFT);
                 }
-            }
-
-        }//end diff
-        children();
-    }
-
-    //BEGIN CUTOUT TOOL
-    module connector_cutout_delete_tool(anchor=CENTER, spin=0, orient=UP){
-        //Begin connector cutout profile
-        connector_cutout_radius = 2.6;
-        connector_cutout_dimple_radius = 2.7;
-        connector_cutout_separation = 2.5;
-        connector_cutout_height = 2.4;
-        dimple_radius = 0.75/2;
-        
-        attachable(anchor, spin, orient, size=[connector_cutout_radius*2-0.1 ,connector_cutout_radius*2,connector_cutout_height]){
-            //connector cutout tool
-            tag_scope()
-            translate([-connector_cutout_radius+0.05,0,-connector_cutout_height/2])
-            render()
-            half_of(RIGHT, s=connector_cutout_dimple_radius*4)
-                linear_extrude(height = connector_cutout_height) 
-                union(){
-                    left(0.1)
-                    diff(){
-                        $fn=50;
-                        //primary round pieces
-                        hull()
-                            xcopies(spacing=connector_cutout_radius*2)
-                                circle(r=connector_cutout_radius);
-                        //inset clip
-                        tag("remove")
-                        right(connector_cutout_radius-connector_cutout_separation)
-                            ycopies(spacing = (connector_cutout_radius+connector_cutout_separation)*2)
-                                circle(r=connector_cutout_dimple_radius);
-                        //dimple (ass) to force seam. Only needed for positive connector piece (not delete tool)
-                        //tag("remove")
-                        //right(connector_cutout_radius*2 + 0.45 )//move dimple in or out
-                        //    yflip_copy(offset=(dimple_radius+connector_cutout_radius)/2)//both sides of the dimpme
-                        //        rect([1,dimple_radius+connector_cutout_radius], rounding=[0,-connector_cutout_radius,-dimple_radius,0], $fn=32); //rect with rounding of inner flare and outer smoothing
-
-                    }
-                    //outward flare fillet for easier insertion
-                    rect([1,connector_cutout_separation*2-(connector_cutout_dimple_radius-connector_cutout_separation)], rounding=[0,-.25,-.25,0], $fn=32, corner_flip=true, anchor=LEFT);
-                }
-            children();
+          }
         }
-    }
-    //END CUTOUT TOOL
+    //end diff
+    children();
+  }
 
-    module openGridTileAp1(tileSize = 28, Tile_Thickness = 6.8){
-        Tile_Thickness = Tile_Thickness;
-        
-        Outside_Extrusion = 0.8;
-        Inside_Grid_Top_Chamfer = 0.4;
-        Inside_Grid_Middle_Chamfer = 1;
-        Top_Capture_Initial_Inset = 2.4;
-        Corner_Square_Thickness = 2.6;
-        Intersection_Distance = 4.2;
+  //BEGIN CUTOUT TOOL
+  module connector_cutout_delete_tool(anchor = CENTER, spin = 0, orient = UP) {
+    //Begin connector cutout profile
+    connector_cutout_radius = 2.6;
+    connector_cutout_dimple_radius = 2.7;
+    connector_cutout_separation = 2.5;
+    connector_cutout_height = 2.4;
+    dimple_radius = 0.75 / 2;
 
-        Tile_Inner_Size_Difference = 3;
-
-
-
-        calculatedCornerSquare = sqrt(tileSize^2+tileSize^2)-2*sqrt(Intersection_Distance^2/2)-Intersection_Distance/2;
-        Tile_Inner_Size = tileSize - Tile_Inner_Size_Difference; //25mm default
-        insideExtrusion = (tileSize-Tile_Inner_Size)/2-Outside_Extrusion; //0.7 default
-        middleDistance = Tile_Thickness-Top_Capture_Initial_Inset*2;
-        cornerChamfer = Top_Capture_Initial_Inset-Inside_Grid_Middle_Chamfer; //1.4 default
-
-        CalculatedCornerChamfer = sqrt(Intersection_Distance^2 / 2);
-        cornerOffset = CalculatedCornerChamfer + Corner_Square_Thickness; //5.56985 (half of 11.1397)
-
-        CorderSquareWidth = sqrt(Corner_Square_Thickness^2 + Corner_Square_Thickness^2)+Intersection_Distance;
-        
-        full_tile_profile = [
-            [0,0],
-            [Outside_Extrusion+insideExtrusion-Inside_Grid_Top_Chamfer,0],
-            [Outside_Extrusion+insideExtrusion,Inside_Grid_Top_Chamfer],
-            [Outside_Extrusion+insideExtrusion,Top_Capture_Initial_Inset-Inside_Grid_Middle_Chamfer],
-            [Outside_Extrusion,Top_Capture_Initial_Inset],
-            [Outside_Extrusion,Tile_Thickness-Top_Capture_Initial_Inset],
-            [Outside_Extrusion+insideExtrusion,Tile_Thickness-Top_Capture_Initial_Inset+Inside_Grid_Middle_Chamfer],
-            [Outside_Extrusion+insideExtrusion,Tile_Thickness-Inside_Grid_Top_Chamfer],
-            [Outside_Extrusion+insideExtrusion-Inside_Grid_Top_Chamfer,Tile_Thickness],
-            [0,Tile_Thickness]
-            ];
-        full_tile_corners_profile = [
-            [0,0],
-            [cornerOffset-cornerChamfer,0],
-            [cornerOffset,cornerChamfer],
-            [cornerOffset,Tile_Thickness-cornerChamfer],
-            [cornerOffset-cornerChamfer,Tile_Thickness],
-            [0,Tile_Thickness]
-
-            ];
-        
-        path_tile = [[tileSize/2,-tileSize/2],[-tileSize/2,-tileSize/2]];
-        
-        intersection() {
-        union() {
-            zrot_copies(n=4)
+    attachable(anchor, spin, orient, size=[connector_cutout_radius * 2 - 0.1, connector_cutout_radius * 2, connector_cutout_height]) {
+      //connector cutout tool
+      tag_scope()
+        translate([-connector_cutout_radius + 0.05, 0, -connector_cutout_height / 2])
+          render()
+            half_of(RIGHT, s=connector_cutout_dimple_radius * 4)
+              linear_extrude(height=connector_cutout_height)
                 union() {
-                    path_extrude2d(path_tile) 
-                        polygon(full_tile_profile);
-                    move([-tileSize/2,-tileSize/2])
-                        rotate([0,0,45])
-                            back(cornerOffset)
-                                rotate([90,0,0])
-                                    linear_extrude(cornerOffset*2) 
-                                        polygon(full_tile_corners_profile);
+                  left(0.1)
+                    diff() {
+                      $fn = 50;
+                      //primary round pieces
+                      hull()
+                        xcopies(spacing=connector_cutout_radius * 2)
+                          circle(r=connector_cutout_radius);
+                      //inset clip
+                      tag("remove")
+                        right(connector_cutout_radius - connector_cutout_separation)
+                          ycopies(spacing=(connector_cutout_radius + connector_cutout_separation) * 2)
+                            circle(r=connector_cutout_dimple_radius);
+                      //dimple (ass) to force seam. Only needed for positive connector piece (not delete tool)
+                      //tag("remove")
+                      //right(connector_cutout_radius*2 + 0.45 )//move dimple in or out
+                      //    yflip_copy(offset=(dimple_radius+connector_cutout_radius)/2)//both sides of the dimpme
+                      //        rect([1,dimple_radius+connector_cutout_radius], rounding=[0,-connector_cutout_radius,-dimple_radius,0], $fn=32); //rect with rounding of inner flare and outer smoothing
+                    }
+                  //outward flare fillet for easier insertion
+                  rect([1, connector_cutout_separation * 2 - (connector_cutout_dimple_radius - connector_cutout_separation)], rounding=[0, -.25, -.25, 0], $fn=32, corner_flip=true, anchor=LEFT);
                 }
-        } 
-        cube([tileSize, tileSize, Tile_Thickness], anchor = BOT);
-        }
+      children();
     }
+  }
+  //END CUTOUT TOOL
+
+  module openGridTileAp1(tileSize = 28, Tile_Thickness = 6.8) {
+    Tile_Thickness = Tile_Thickness;
+
+    Outside_Extrusion = 0.8;
+    Inside_Grid_Top_Chamfer = 0.4;
+    Inside_Grid_Middle_Chamfer = 1;
+    Top_Capture_Initial_Inset = 2.4;
+    Corner_Square_Thickness = 2.6;
+    Intersection_Distance = 4.2;
+
+    Tile_Inner_Size_Difference = 3;
+
+    calculatedCornerSquare = sqrt(tileSize ^ 2 + tileSize ^ 2) - 2 * sqrt(Intersection_Distance ^ 2 / 2) - Intersection_Distance / 2;
+    Tile_Inner_Size = tileSize - Tile_Inner_Size_Difference; //25mm default
+    insideExtrusion = (tileSize - Tile_Inner_Size) / 2 - Outside_Extrusion; //0.7 default
+    middleDistance = Tile_Thickness - Top_Capture_Initial_Inset * 2;
+    cornerChamfer = Top_Capture_Initial_Inset - Inside_Grid_Middle_Chamfer; //1.4 default
+
+    CalculatedCornerChamfer = sqrt(Intersection_Distance ^ 2 / 2);
+    cornerOffset = CalculatedCornerChamfer + Corner_Square_Thickness; //5.56985 (half of 11.1397)
+
+    CorderSquareWidth = sqrt(Corner_Square_Thickness ^ 2 + Corner_Square_Thickness ^ 2) + Intersection_Distance;
+
+    full_tile_profile = [
+      [0, 0],
+      [Outside_Extrusion + insideExtrusion - Inside_Grid_Top_Chamfer, 0],
+      [Outside_Extrusion + insideExtrusion, Inside_Grid_Top_Chamfer],
+      [Outside_Extrusion + insideExtrusion, Top_Capture_Initial_Inset - Inside_Grid_Middle_Chamfer],
+      [Outside_Extrusion, Top_Capture_Initial_Inset],
+      [Outside_Extrusion, Tile_Thickness - Top_Capture_Initial_Inset],
+      [Outside_Extrusion + insideExtrusion, Tile_Thickness - Top_Capture_Initial_Inset + Inside_Grid_Middle_Chamfer],
+      [Outside_Extrusion + insideExtrusion, Tile_Thickness - Inside_Grid_Top_Chamfer],
+      [Outside_Extrusion + insideExtrusion - Inside_Grid_Top_Chamfer, Tile_Thickness],
+      [0, Tile_Thickness],
+    ];
+    full_tile_corners_profile = [
+      [0, 0],
+      [cornerOffset - cornerChamfer, 0],
+      [cornerOffset, cornerChamfer],
+      [cornerOffset, Tile_Thickness - cornerChamfer],
+      [cornerOffset - cornerChamfer, Tile_Thickness],
+      [0, Tile_Thickness],
+    ];
+
+    path_tile = [[tileSize / 2, -tileSize / 2], [-tileSize / 2, -tileSize / 2]];
+
+    intersection() {
+      union() {
+        zrot_copies(n=4)
+          union() {
+            path_extrude2d(path_tile)
+              polygon(full_tile_profile);
+            move([-tileSize / 2, -tileSize / 2])
+              rotate([0, 0, 45])
+                back(cornerOffset)
+                  rotate([90, 0, 0])
+                    linear_extrude(cornerOffset * 2)
+                      polygon(full_tile_corners_profile);
+          }
+      }
+      cube([tileSize, tileSize, Tile_Thickness], anchor=BOT);
+    }
+  }
 }
 
+module FillSpaceFullTiles() {
+  // === Derived tile space ===
+  Total_Grid_Width = floor(Space_Width / Tile_Size);
+  Total_Grid_Depth = floor(Space_Depth / Tile_Size);
 
-module FillSpaceFullTiles(){
-    // === Derived tile space ===
-    Total_Grid_Width = floor(Space_Width / Tile_Size);
-    Total_Grid_Depth = floor(Space_Depth / Tile_Size);
+  // === Max tile counts ===
+  Max_Tiles_Wide = floor(Total_Grid_Width / Max_Tile_Width);
+  Max_Tiles_Deep = floor(Total_Grid_Depth / Max_Tile_Depth);
 
-    // === Max tile counts ===
-    Max_Tiles_Wide = floor(Total_Grid_Width / Max_Tile_Width);
-    Max_Tiles_Deep = floor(Total_Grid_Depth / Max_Tile_Depth);
+  // === Remaining grid spaces ===
+  Remaining_Width = Total_Grid_Width - (Max_Tiles_Wide * Max_Tile_Width);
+  Remaining_Depth = Total_Grid_Depth - (Max_Tiles_Deep * Max_Tile_Depth);
 
-    // === Remaining grid spaces ===
-    Remaining_Width = Total_Grid_Width - (Max_Tiles_Wide * Max_Tile_Width);
-    Remaining_Depth = Total_Grid_Depth - (Max_Tiles_Deep * Max_Tile_Depth);
+  // === Output for debugging ===
+  echo("Grid Width (tiles):", Total_Grid_Width);
+  echo("Grid Depth (tiles):", Total_Grid_Depth);
+  echo("Max Tiles Wide:", Max_Tiles_Wide);
+  echo("Max Tiles Deep:", Max_Tiles_Deep);
+  echo("Remaining Width (tiles):", Remaining_Width);
+  echo("Remaining Depth (tiles):", Remaining_Depth);
+  spacing_x = Tile_Size + Tile_Spacing;
+  spacing_y = Tile_Size + Tile_Spacing;
 
+  // === Tile placement function ===
+  module place_tile(x, y, w, h) {
+    translate([x * spacing_x, y * spacing_y, 0]) if (Full_or_Lite == "Full")
+      openGrid(
+        Board_Width=w, Board_Height=h,
+        tileSize=Tile_Size,
+        Tile_Thickness=Tile_Thickness,
+        Screw_Mounting=Screw_Mounting,
+        Chamfers=Chamfers, anchor=BOT,
+        Connector_Holes=Connector_Holes
+      );
+    else
+      openGridLite(
+        Board_Width=w,
+        Board_Height=h,
+        tileSize=Tile_Size,
+        Screw_Mounting=Screw_Mounting,
+        Chamfers=Chamfers, anchor=BOT,
+        Connector_Holes=Connector_Holes
+      );
+  }
 
+  // === Main grid of full max-size tiles ===
+  for (x = [0:Max_Tile_Width:Max_Tile_Width * (Max_Tiles_Wide - 1)])
+    for (y = [0:Max_Tile_Depth:Max_Tile_Depth * (Max_Tiles_Deep - 1)])
+      place_tile(x, y, Max_Tile_Width, Max_Tile_Depth);
 
-    // === Output for debugging ===
-    echo("Grid Width (tiles):", Total_Grid_Width);
-    echo("Grid Depth (tiles):", Total_Grid_Depth);
-    echo("Max Tiles Wide:", Max_Tiles_Wide);
-    echo("Max Tiles Deep:", Max_Tiles_Deep);
-    echo("Remaining Width (tiles):", Remaining_Width);
-    echo("Remaining Depth (tiles):", Remaining_Depth);
-    spacing_x = Tile_Size + Tile_Spacing;
-    spacing_y = Tile_Size + Tile_Spacing;
+  // === Right edge: fill remaining width with a full-height tile
+  if (Remaining_Width > 0)
+    for (y = [0:Max_Tile_Depth:Max_Tile_Depth * (Max_Tiles_Deep - 1)])
+      place_tile(Max_Tile_Width * Max_Tiles_Wide, y, Remaining_Width, Max_Tile_Depth);
 
-    // === Tile placement function ===
-    module place_tile(x, y, w, h) {
-        translate([x * spacing_x, y * spacing_y, 0])
-            if(Full_or_Lite == "Full")
-                openGrid(Board_Width = w, Board_Height = h, 
-                    tileSize = Tile_Size, 
-                    Tile_Thickness = Tile_Thickness, 
-                    Screw_Mounting = Screw_Mounting, 
-                    Chamfers = Chamfers, anchor=BOT, 
-                    Connector_Holes = Connector_Holes
-                );
-            else
-                openGridLite(
-                    Board_Width = w, 
-                    Board_Height = h, 
-                    tileSize = Tile_Size,  
-                    Screw_Mounting = Screw_Mounting, 
-                    Chamfers = Chamfers, anchor=BOT, 
-                    Connector_Holes = Connector_Holes
-                );
-    }
+  // === Bottom edge: fill remaining height with a full-width tile
+  if (Remaining_Depth > 0)
+    for (x = [0:Max_Tile_Width:Max_Tile_Width * (Max_Tiles_Wide - 1)])
+      place_tile(x, Max_Tile_Depth * Max_Tiles_Deep, Max_Tile_Width, Remaining_Depth);
 
-    // === Main grid of full max-size tiles ===
-    for (x = [0 : Max_Tile_Width : Max_Tile_Width * (Max_Tiles_Wide - 1)])
-        for (y = [0 : Max_Tile_Depth : Max_Tile_Depth * (Max_Tiles_Deep - 1)])
-            place_tile(x, y, Max_Tile_Width, Max_Tile_Depth);
-
-    // === Right edge: fill remaining width with a full-height tile
-    if (Remaining_Width > 0)
-        for (y = [0 : Max_Tile_Depth : Max_Tile_Depth * (Max_Tiles_Deep - 1)])
-            place_tile(Max_Tile_Width * Max_Tiles_Wide, y, Remaining_Width, Max_Tile_Depth);
-
-    // === Bottom edge: fill remaining height with a full-width tile
-    if (Remaining_Depth > 0)
-        for (x = [0 : Max_Tile_Width : Max_Tile_Width * (Max_Tiles_Wide - 1)])
-            place_tile(x, Max_Tile_Depth * Max_Tiles_Deep, Max_Tile_Width, Remaining_Depth);
-
-    // === Bottom-right corner: one tile for remaining width and height
-    if (Remaining_Width > 0 && Remaining_Depth > 0)
-        place_tile(Max_Tile_Width * Max_Tiles_Wide, Max_Tile_Depth * Max_Tiles_Deep, Remaining_Width, Remaining_Depth);
-
-
+  // === Bottom-right corner: one tile for remaining width and height
+  if (Remaining_Width > 0 && Remaining_Depth > 0)
+    place_tile(Max_Tile_Width * Max_Tiles_Wide, Max_Tile_Depth * Max_Tiles_Deep, Remaining_Width, Remaining_Depth);
 }
 
-module FillSpaceClipOneSide(){
-    /* — 1) Compute each full 8×8 tile’s size in pure millimeters (no spacing) — */
-    full_tile_width_mm  = Max_Tile_Width  * Tile_Size;  // 8 × 28 = 224 mm
-    full_tile_depth_mm  = Max_Tile_Depth  * Tile_Size;  // 8 × 28 = 224 mm
+module FillSpaceClipOneSide() {
+  /* — 1) Compute each full 8×8 tile’s size in pure millimeters (no spacing) — */
+  full_tile_width_mm = Max_Tile_Width * Tile_Size; // 8 × 28 = 224 mm
+  full_tile_depth_mm = Max_Tile_Depth * Tile_Size; // 8 × 28 = 224 mm
 
-    /* — 2) Determine how many full‐width columns fit — */
-    num_full_cols    = floor(Space_Width  / full_tile_width_mm);
-    // leftover width (in mm) beyond full columns
-    rem_width_mm     = Space_Width - (num_full_cols * full_tile_width_mm);
-    // If any leftover > 0, we’ll need one extra (clipped) column:
-    num_cols         = num_full_cols + (rem_width_mm > 0 ? 1 : 0);
+  /* — 2) Determine how many full‐width columns fit — */
+  num_full_cols = floor(Space_Width / full_tile_width_mm);
+  // leftover width (in mm) beyond full columns
+  rem_width_mm = Space_Width - (num_full_cols * full_tile_width_mm);
+  // If any leftover > 0, we’ll need one extra (clipped) column:
+  num_cols = num_full_cols + (rem_width_mm > 0 ? 1 : 0);
 
-    /* — 3) Determine how many full‐depth rows fit — */
-    num_full_rows    = floor(Space_Depth / full_tile_depth_mm);
-    // leftover depth (in mm) beyond full rows
-    rem_depth_mm     = Space_Depth - (num_full_rows * full_tile_depth_mm);
-    // If any leftover > 0, we’ll need one extra (clipped) row:
-    num_rows         = num_full_rows + (rem_depth_mm > 0 ? 1 : 0);
+  /* — 3) Determine how many full‐depth rows fit — */
+  num_full_rows = floor(Space_Depth / full_tile_depth_mm);
+  // leftover depth (in mm) beyond full rows
+  rem_depth_mm = Space_Depth - (num_full_rows * full_tile_depth_mm);
+  // If any leftover > 0, we’ll need one extra (clipped) row:
+  num_rows = num_full_rows + (rem_depth_mm > 0 ? 1 : 0);
 
-    /* — 4) Build lists of X and Y origins (in mm) for each column/row —
+  /* — 4) Build lists of X and Y origins (in mm) for each column/row —
     //     Each origin = (i * full_tile_width_mm) + (i * Tile_Spacing)
     //     so that the 5 mm gap is only used when positioning, not in count. — */
-    X_origins = [
-        for (i = [0 : num_cols - 1])
-            (i * full_tile_width_mm) + (i * Tile_Spacing)
-    ];
-    Y_origins = [
-        for (j = [0 : num_rows - 1])
-            (j * full_tile_depth_mm) + (j * Tile_Spacing)
-    ];
+  X_origins = [
+    for (i = [0:num_cols - 1]) (i * full_tile_width_mm) + (i * Tile_Spacing),
+  ];
+  Y_origins = [
+    for (j = [0:num_rows - 1]) (j * full_tile_depth_mm) + (j * Tile_Spacing),
+  ];
 
-    /* — 5) Debug echoes to verify calculation — */
-    echo("Drawer interior (mm):", Space_Width, "×", Space_Depth);
-    echo("Full‐tile size  (mm):", full_tile_width_mm, "×", full_tile_depth_mm);
-    echo("num_full_cols, rem_width_mm:", num_full_cols, ",", rem_width_mm);
-    echo("num_cols total (incl. clipped):", num_cols, "→ X_origins:", X_origins);
-    echo("num_full_rows, rem_depth_mm:", num_full_rows, ",", rem_depth_mm);
-    echo("num_rows total (incl. clipped):", num_rows, "→ Y_origins:", Y_origins);
+  /* — 5) Debug echoes to verify calculation — */
+  echo("Drawer interior (mm):", Space_Width, "×", Space_Depth);
+  echo("Full‐tile size  (mm):", full_tile_width_mm, "×", full_tile_depth_mm);
+  echo("num_full_cols, rem_width_mm:", num_full_cols, ",", rem_width_mm);
+  echo("num_cols total (incl. clipped):", num_cols, "→ X_origins:", X_origins);
+  echo("num_full_rows, rem_depth_mm:", num_full_rows, ",", rem_depth_mm);
+  echo("num_rows total (incl. clipped):", num_rows, "→ Y_origins:", Y_origins);
 
-    /* — 6) Module: place a full 8×8 tile at bottom‐left = (x_mm, y_mm),
+  /* — 6) Module: place a full 8×8 tile at bottom‐left = (x_mm, y_mm),
         then clip it to the drawer bounds. openGrid(8,8) is centered,
         so we shift its center to (x_mm + half_w, y_mm + half_d). — */
-    module place_centered_and_clipped(x_mm, y_mm) {
-        // Half‐dimensions of an 8×8 tile (because openGrid is centered)
-        half_w = full_tile_width_mm  / 2;   // 224/2 = 112 mm
-        half_d = full_tile_depth_mm  / 2;   // 224/2 = 112 mm
+  module place_centered_and_clipped(x_mm, y_mm) {
+    // Half‐dimensions of an 8×8 tile (because openGrid is centered)
+    half_w = full_tile_width_mm / 2; // 224/2 = 112 mm
+    half_d = full_tile_depth_mm / 2; // 224/2 = 112 mm
 
-        // Center point for openGrid:
-        cx = x_mm + half_w;
-        cy = y_mm + half_d;
+    // Center point for openGrid:
+    cx = x_mm + half_w;
+    cy = y_mm + half_d;
 
-        // Naive extents (before clipping)
-        x0 = cx - half_w;   // = x_mm
-        x1 = cx + half_w;   // = x_mm + full_tile_width_mm
-        y0 = cy - half_d;   // = y_mm
-        y1 = cy + half_d;   // = y_mm + full_tile_depth_mm
+    // Naive extents (before clipping)
+    x0 = cx - half_w; // = x_mm
+    x1 = cx + half_w; // = x_mm + full_tile_width_mm
+    y0 = cy - half_d; // = y_mm
+    y1 = cy + half_d; // = y_mm + full_tile_depth_mm
 
-        // Clipped extents:
-        clipped_x0 = max(x0,        0);
-        clipped_x1 = min(x1, Space_Width);
-        clipped_y0 = max(y0,        0);
-        clipped_y1 = min(y1, Space_Depth);
+    // Clipped extents:
+    clipped_x0 = max(x0, 0);
+    clipped_x1 = min(x1, Space_Width);
+    clipped_y0 = max(y0, 0);
+    clipped_y1 = min(y1, Space_Depth);
 
-        // Intersection: drawer cube ∩ translated, centered openGrid(8,8)
-        intersection() {
-            cube([Space_Width + num_full_cols * Tile_Spacing, Space_Depth + num_full_rows * Tile_Spacing, 10], center = false);
-            translate([cx, cy, 0])
-                if(Full_or_Lite == "Full")
-                    openGrid(
-                        Board_Width  = Max_Tile_Width,
-                        Board_Height = Max_Tile_Depth, 
-                        tileSize = Tile_Size, 
-                        Tile_Thickness = Tile_Thickness, 
-                        Screw_Mounting = Screw_Mounting, 
-                        Chamfers = Chamfers, anchor=BOT, 
-                        Connector_Holes = Connector_Holes
-                    );
-                else {  
-                    openGridLite(
-                        Board_Width  = Max_Tile_Width,
-                        Board_Height = Max_Tile_Depth, 
-                        tileSize = Tile_Size,  
-                        Screw_Mounting = Screw_Mounting, 
-                        Chamfers = Chamfers, anchor=BOT, 
-                        Connector_Holes = Connector_Holes
-                    );
-                }
-        }
+    // Intersection: drawer cube ∩ translated, centered openGrid(8,8)
+    intersection() {
+      cube([Space_Width + num_full_cols * Tile_Spacing, Space_Depth + num_full_rows * Tile_Spacing, 10], center=false);
+      translate([cx, cy, 0]) if (Full_or_Lite == "Full")
+        openGrid(
+          Board_Width=Max_Tile_Width,
+          Board_Height=Max_Tile_Depth,
+          tileSize=Tile_Size,
+          Tile_Thickness=Tile_Thickness,
+          Screw_Mounting=Screw_Mounting,
+          Chamfers=Chamfers, anchor=BOT,
+          Connector_Holes=Connector_Holes
+        );
+      else {
+        openGridLite(
+          Board_Width=Max_Tile_Width,
+          Board_Height=Max_Tile_Depth,
+          tileSize=Tile_Size,
+          Screw_Mounting=Screw_Mounting,
+          Chamfers=Chamfers, anchor=BOT,
+          Connector_Holes=Connector_Holes
+        );
+      }
     }
+  }
 
-    /* — 7) Place every column × row of 8×8 modules — */
-    for (ci = [0 : num_cols - 1]) {
-        x_base = X_origins[ci];
-        for (rj = [0 : num_rows - 1]) {
-            y_base = Y_origins[rj];
-            place_centered_and_clipped(x_base, y_base);
-        }
+  /* — 7) Place every column × row of 8×8 modules — */
+  for (ci = [0:num_cols - 1]) {
+    x_base = X_origins[ci];
+    for (rj = [0:num_rows - 1]) {
+      y_base = Y_origins[rj];
+      place_centered_and_clipped(x_base, y_base);
     }
+  }
 }
