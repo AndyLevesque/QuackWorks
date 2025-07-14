@@ -11,9 +11,7 @@ Change Log:
 
 
 Credit to 
-    @David D on Printables for openGrid https://www.printables.com/@DavidD
     Katie and her community at Hands on Katie on Youtube, Patreon, and Discord https://handsonkatie.com/
-    SnazzyGreenWarrior for Keyhole design, logic, and testing
 */
 
 include <BOSL2/std.scad>
