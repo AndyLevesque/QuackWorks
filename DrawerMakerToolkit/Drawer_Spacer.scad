@@ -8,8 +8,6 @@ Change Log:
 - 2025-
     - Initial release
 
-
-
 Credit to 
     Katie and her community at Hands on Katie on Youtube, Patreon, and Discord https://handsonkatie.com/
 */
@@ -18,8 +16,8 @@ include <BOSL2/std.scad>
 include <BOSL2/rounding.scad>
 include <BOSL2/threading.scad>
 
-//Thickness (mm) of the drawer
-Drawer_Thickness = 19;
+//Thickness (mm) of the drawer walls
+Drawer_Wall_Thickness = 19;
 //Thickness (mm) of the spacer (top of drawer wall to top of spacer)
 Spacer_Thickness = 4;
 
@@ -32,7 +30,7 @@ spacerWallHeight = 16;
 $fn = 50;
 
 //base
-cuboid([Drawer_Thickness + wallThickness*2, spacerDepth, Spacer_Thickness]){
+cuboid([Drawer_Wall_Thickness + wallThickness*2, spacerDepth, Spacer_Thickness]){
     //walls
     attach(TOP, BOT, align=[LEFT, RIGHT], overlap=0.01)
         cuboid([wallThickness, spacerDepth, spacerWallHeight], chamfer = wallThickness/3, edges = ($idx == 1 ? TOP+LEFT : TOP+RIGHT));
