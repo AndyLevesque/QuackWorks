@@ -27,13 +27,24 @@ wallThickness = 3;
 spacerDepth = 50;
 spacerWallHeight = 16;
 
+//Text parameters
+text_depth = 0.2;
+text_size = 6;
+font = "Monsterrat:style=Bold";
+
 $fn = 50;
 
 //base
+diff()
 cuboid([Drawer_Wall_Thickness + wallThickness*2, spacerDepth, Spacer_Thickness]){
     //walls
     attach(TOP, BOT, align=[LEFT, RIGHT], overlap=0.01)
         cuboid([wallThickness, spacerDepth, spacerWallHeight], chamfer = wallThickness/3, edges = ($idx == 1 ? TOP+LEFT : TOP+RIGHT));
+    //text
+        tag("remove")
+            zrot(90)
+            attach(TOP)
+                text3d(str(Spacer_Thickness, "MM"), size=text_size, font=font, h=text_depth*2, atype="ycenter", anchor=CENTER);
 }
 
 
