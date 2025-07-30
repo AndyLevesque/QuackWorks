@@ -24,6 +24,8 @@ Change Log:
 - 2025-07-12 (thanks mitufy!)
     - Screw positioning options
     - Formatting changes
+- 2025-07-13
+    - New ability to specify an adhesive mounting type which prints a solid bottom on the board
 
 
 Credit to 
@@ -69,6 +71,12 @@ Screw_Head_Inset = 1;
 Screw_Head_Is_CounterSunk = true;
 Screw_Head_CounterSunk_Degree = 90;
 
+/*[Adhesive Base Options]*/
+//[Lite only] Adds a backing which allows you to adhere with double sided tape
+Add_Adhesive_Base = true;
+//0.6 allows space for a channel to fit into the board.
+Adhesive_Base_Thickness = 0.6;
+
 /*[Advanced - Tile Parameters]*/
 //Customize tile sizes - openGrid standard is 28mm
 Tile_Size = 28;
@@ -92,6 +100,7 @@ Max_Tile_Width = 8;
 Max_Tile_Depth = 8;
 Tile_Spacing = 5;
 
+adjustedStackCount = Add_Adhesive_Base ? 1 : Stack_Count;
 adjustedInterfaceThickness =
     Stacking_Method == "Interface Layer" ? Interface_Thickness : 0;
 
@@ -102,24 +111,24 @@ if (Fill_Space_Mode == "Fill Available Space")
 
 //GENERATE SINGLE TILES
 if (Fill_Space_Mode == "None") {
-    if (Full_or_Lite == "Full" && Stack_Count == 1) openGrid(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Tile_Thickness=Tile_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, anchor=BOT, Connector_Holes=Connector_Holes);
-    if (Full_or_Lite == "Lite" && Stack_Count == 1) openGridLite(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, anchor=BOT, Connector_Holes=Connector_Holes);
+    if (Full_or_Lite == "Full" && adjustedStackCount == 1) openGrid(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Tile_Thickness=Tile_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, Add_Adhesive_Base=Add_Adhesive_Base, anchor=BOT, Connector_Holes=Connector_Holes);
+    if (Full_or_Lite == "Lite" && adjustedStackCount == 1) openGridLite(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, Add_Adhesive_Base=Add_Adhesive_Base, anchor=BOT, Connector_Holes=Connector_Holes);
 
     //GENERATE STACKED TILES
-    if (Full_or_Lite == "Full" && Stack_Count > 1) {
-        zcopies(spacing=Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=Stack_Count, sp=[0, 0, Tile_Thickness])
+    if (Full_or_Lite == "Full" && adjustedStackCount > 1) {
+        zcopies(spacing=Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=adjustedStackCount, sp=[0, 0, Tile_Thickness])
             zflip()
                 openGrid(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Tile_Thickness=Tile_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, anchor=BOT, Connector_Holes=Connector_Holes);
         if (Stacking_Method == "Interface Layer")
-            zcopies(spacing=Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=Stack_Count - 1, sp=[0, 0, Tile_Thickness + Interface_Separation])
+            zcopies(spacing=Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=adjustedStackCount - 1, sp=[0, 0, Tile_Thickness + Interface_Separation])
                 color("red") interfaceLayer(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Tile_Thickness=Tile_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, boardType="Full", anchor=BOT);
     }
 
-    if (Full_or_Lite == "Lite" && Stack_Count > 1) {
-        zcopies(spacing=Lite_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=Stack_Count, sp=[0, 0, Lite_Tile_Thickness])
+    if (Full_or_Lite == "Lite" && adjustedStackCount > 1) {
+        zcopies(spacing=Lite_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=adjustedStackCount, sp=[0, 0, Lite_Tile_Thickness])
             openGridLite(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, Connector_Holes=Connector_Holes, anchor=$idx % 2 == 0 ? TOP : BOT, orient=$idx % 2 == 0 ? UP : DOWN);
         if (Stacking_Method == "Interface Layer")
-            zcopies(spacing=Lite_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=Stack_Count - 1, sp=[0, 0, Lite_Tile_Thickness + Interface_Separation])
+            zcopies(spacing=Lite_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=adjustedStackCount - 1, sp=[0, 0, Lite_Tile_Thickness + Interface_Separation])
                 color("red") interfaceLayer2D(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Tile_Thickness=Tile_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, boardType="Lite", topSide=$idx % 2 == 0 ? false : true);
     }
 }
@@ -159,26 +168,46 @@ module interfaceLayer2D(Board_Width, Board_Height, tileSize = 28, Tile_Thickness
             );
         }
 }
-module openGridLite(Board_Width, Board_Height, tileSize = 28, Screw_Mounting = "None", Chamfers = "None", anchor = CENTER, spin = 0, orient = UP, Connector_Holes = false) {
+module openGridLite(Board_Width, Board_Height, tileSize = 28, Screw_Mounting = "None", Chamfers = "None", Add_Adhesive_Base = false, anchor = CENTER, spin = 0, orient = UP, Connector_Holes = false) {
     // Screw_Mounting options: [Everywhere, Corners, None]
     // Bevel options: [Everywhere, Corners, None]
     Tile_Thickness = 6.8;
+    total_thickness = Lite_Tile_Thickness + (Add_Adhesive_Base ? Adhesive_Base_Thickness : 0);
 
-    attachable(anchor, spin, orient, size=[Board_Width * tileSize, Board_Height * tileSize, Lite_Tile_Thickness]) {
+    attachable(anchor, spin, orient, size=[Board_Width * tileSize, Board_Height * tileSize, total_thickness]) {
         render(convexity=2)
             down(Lite_Tile_Thickness / 2)
+            union() {
                 down(Tile_Thickness - Lite_Tile_Thickness)
-                    top_half(z=Tile_Thickness - Lite_Tile_Thickness, s=max(tileSize * Board_Width, tileSize * Board_Height) * 2)
-                        openGrid(
-                            Board_Width=Board_Width,
-                            Board_Height=Board_Height,
-                            tileSize=tileSize,
-                            Screw_Mounting=Screw_Mounting,
-                            Chamfers=Chamfers,
-                            anchor=BOT,
-                            Connector_Holes=Connector_Holes
-                        );
+                top_half(z=Tile_Thickness - Lite_Tile_Thickness, s=max(tileSize * Board_Width, tileSize * Board_Height) * 2)
+                    openGrid(
+                        Board_Width=Board_Width,
+                        Board_Height=Board_Height,
+                        tileSize=tileSize,
+                        Screw_Mounting=Screw_Mounting,
+                        Chamfers=Chamfers,
+                        anchor=BOT,
+                        Connector_Holes=Connector_Holes
+                    );
+
+                if (Add_Adhesive_Base) {
+                    adhesiveBase(Board_Width, Board_Height, tileSize);
+                }
+            }
         children();
+    }
+
+    module adhesiveBase(Board_Width, Board_Height, tileSize = 28, anchor = CENTER, spin = 0, orient = UP) {
+        attachable(anchor, spin, orient, size = [tileSize * Board_Width, tileSize * Board_Height, Adhesive_Base_Thickness]) {
+            render(convexity=2)
+                diff() {
+                    cube([tileSize * Board_Width, tileSize * Board_Height, Adhesive_Base_Thickness], anchor=BOT, orient=DOWN);
+                    down(Adhesive_Base_Thickness)
+                    applyTileCornerModifications(Board_Width=Board_Width, Board_Height=Board_Height, Tile_Thickness=Adhesive_Base_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, anchor=BOT);
+                }
+
+            children();
+        }
     }
 }
 
@@ -189,19 +218,10 @@ module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, 
     $fn = 30;
     //2D is fast. 3D is slow. No benefits of 3D. 
     Render_Method = "2D"; //[3D, 2D]
-    Intersection_Distance = 4.2;
     Tile_Thickness = Tile_Thickness;
 
-    tileChamfer = sqrt(Intersection_Distance ^ 2 * 2);
     lite_cutout_distance_from_top = 1;
     connector_cutout_height = 2.4 + 0.01;
-
-    cornerChamfers = concat(
-        Chamfer_Bottom_Right ? [[tileSize * Board_Width / 2, -tileSize * Board_Height / 2, 0]] : [],
-        Chamfer_Top_Right ? [[tileSize * Board_Width / 2, tileSize * Board_Height / 2, 0]] : [],
-        Chamfer_Bottom_Left ? [[-tileSize * Board_Width / 2, -tileSize * Board_Height / 2, 0]] : [],
-        Chamfer_Top_Left ? [[-tileSize * Board_Width / 2, tileSize * Board_Height / 2, 0]] : []
-    );
 
     attachable(anchor, spin, orient, size=[Board_Width * tileSize, Board_Height * tileSize, Tile_Thickness]) {
 
@@ -210,69 +230,15 @@ module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, 
                 diff() {
                     render() union() {
                             grid_copies(spacing=tileSize, n=[Board_Width, Board_Height])
-
                             if (Render_Method == "2D")
                                 openGridTileAp1(tileSize=tileSize, Tile_Thickness=Tile_Thickness);
                             else
                                 wonderboardTileAp2();
                         }
+
                     //TODO: Modularize positioning (Outside Corners, inside corners, inside all) and holes (chamfer and screw holes)
-                    //Bevel Everywhere
-                    if (Chamfers == "Everywhere" && Screw_Mounting != "Everywhere" && Screw_Mounting != "Corners")
-                        tag("remove")
-                            grid_copies(spacing=tileSize, size=[Board_Width * tileSize, Board_Height * tileSize])
-                                down(0.01)
-                                    zrot(45)
-                                        cuboid([tileChamfer, tileChamfer, Tile_Thickness + 0.02], anchor=BOT);
-                    //Bevel Corners
-                    if (Chamfers == "Corners" || (Chamfers == "Everywhere" && (Screw_Mounting == "Everywhere" || Screw_Mounting == "Corners")))
-                        tag("remove")
-                            move_copies(
-                                cornerChamfers
-                                //[
-                                //[tileSize*Board_Width/2,tileSize*Board_Height/2,0],
-                                //[-tileSize*Board_Width/2,tileSize*Board_Height/2,0],
-                                //[tileSize*Board_Width/2,-tileSize*Board_Height/2,0],
-                                //[-tileSize*Board_Width/2,-tileSize*Board_Height/2,0]
-                                //]
-                            )
-                                down(0.01)
-                                    zrot(45)
-                                        cuboid([tileChamfer, tileChamfer, Tile_Thickness + 0.02], anchor=BOT);
-                    //Screw Mount Corners
-                    if (Screw_Mounting == "Corners")
-                        tag("remove")
-                            move_copies([[tileSize * Board_Width / 2 - tileSize, tileSize * Board_Height / 2 - tileSize, 0], [-tileSize * Board_Width / 2 + tileSize, tileSize * Board_Height / 2 - tileSize, 0], [tileSize * Board_Width / 2 - tileSize, -tileSize * Board_Height / 2 + tileSize, 0], [-tileSize * Board_Width / 2 + tileSize, -tileSize * Board_Height / 2 + tileSize, 0]])
-                                up(Tile_Thickness + 0.01)
-                                    cyl(d=Screw_Head_Diameter, h=Screw_Head_Inset > 0 ? Screw_Head_Inset : 0.01, anchor=TOP)
-                                        attach(BOT, TOP) cyl(d2=Screw_Head_Diameter, d1=Screw_Diameter, h=Screw_Head_Is_CounterSunk ? tan((180 - Screw_Head_CounterSunk_Degree) / 2) * (Screw_Head_Diameter / 2 - Screw_Diameter / 2) - 0.01 : 0.01)
-                                                attach(BOT, TOP) cyl(d=Screw_Diameter, h=Tile_Thickness + 0.02);
-                    //Screw Mount Everywhere
-                    if (Screw_Mounting == "Everywhere")
-                        tag("remove")
-                            grid_copies(spacing=tileSize, size=[(Board_Width - 2) * tileSize, (Board_Height - 2) * tileSize]) up(Tile_Thickness + 0.01)
-                                    cyl(d=Screw_Head_Diameter, h=Screw_Head_Inset > 0 ? Screw_Head_Inset : 0.01, anchor=TOP)
-                                        attach(BOT, TOP) cyl(d2=Screw_Head_Diameter, d1=Screw_Diameter, h=Screw_Head_Is_CounterSunk ? tan((180 - Screw_Head_CounterSunk_Degree) / 2) * (Screw_Head_Diameter / 2 - Screw_Diameter / 2) - 0.01 : 0.01)
-                                                attach(BOT, TOP) cyl(d=Screw_Diameter, h=Tile_Thickness + 0.02);
-                    if (Screw_Mounting == "By Row and Column")
-                        translate([(Board_Width - 2) % max(1, Screw_Every_X_Columns) % 2 == 0 ? 0 : -tileSize / 2, (Board_Height - 2) % max(1, Screw_Every_X_Rows) % 2 == 0 ? 0 : tileSize / 2])
-                            tag("remove") grid_copies(spacing=[tileSize * max(1, Screw_Every_X_Columns), tileSize * max(1, Screw_Every_X_Rows)], size=[(Board_Width - 2) * tileSize, (Board_Height - 2) * tileSize])
-                                    up(Tile_Thickness + 0.01) cyl(d=Screw_Head_Diameter, h=Screw_Head_Inset > 0 ? Screw_Head_Inset : 0.01, anchor=TOP)
-                                            attach(BOT, TOP) cyl(d2=Screw_Head_Diameter, d1=Screw_Diameter, h=Screw_Head_Is_CounterSunk ? tan((180 - Screw_Head_CounterSunk_Degree) / 2) * (Screw_Head_Diameter / 2 - Screw_Diameter / 2) - 0.01 : 0.01)
-                                                    attach(BOT, TOP) cyl(d=Screw_Diameter, h=Tile_Thickness + 0.02);
-                    if (Screw_Mounting == "Custom") {
-                        start_point_x = -(Board_Width - 2) / 2 * tileSize;
-                        start_point_y = (Board_Height - 2) / 2 * tileSize;
-                        for (i = [0:min(len(Screw_Custom_Positions), (Board_Width - 1) * (Board_Height - 1)) - 1]) {
-                            if (Screw_Custom_Positions[i] == "1") {
-                                tag("remove")
-                                    move_copies([[start_point_x + tileSize * (i % (Board_Width - 1)), start_point_y - tileSize * floor(i / (Board_Width - 1)), 0]])
-                                        up(Tile_Thickness + 0.01) cyl(d=Screw_Head_Diameter, h=Screw_Head_Inset > 0 ? Screw_Head_Inset : 0.01, anchor=TOP)
-                                                attach(BOT, TOP) cyl(d2=Screw_Head_Diameter, d1=Screw_Diameter, h=Screw_Head_Is_CounterSunk ? tan((180 - Screw_Head_CounterSunk_Degree) / 2) * (Screw_Head_Diameter / 2 - Screw_Diameter / 2) - 0.01 : 0.01)
-                                                        attach(BOT, TOP) cyl(d=Screw_Diameter, h=Tile_Thickness + 0.02);
-                            }
-                        }
-                    }
+                    applyTileCornerModifications(Board_Width, Board_Height, tileSize, Tile_Thickness, Screw_Mounting, Chamfers, anchor);
+
                     if (Connector_Holes) {
                         //top and bottom connector holes
                         if (Board_Height > 1)
@@ -422,6 +388,79 @@ module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, 
         }
     }
 }
+
+module applyTileCornerModifications(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, Screw_Mounting = "None", Chamfers = "None", anchor = CENTER) {
+    Intersection_Distance = 4.2;
+    tileChamfer = sqrt(Intersection_Distance ^ 2 * 2);
+
+    cornerChamfers = concat(
+        Chamfer_Bottom_Right ? [[tileSize * Board_Width / 2, -tileSize * Board_Height / 2, 0]] : [],
+        Chamfer_Top_Right ? [[tileSize * Board_Width / 2, tileSize * Board_Height / 2, 0]] : [],
+        Chamfer_Bottom_Left ? [[-tileSize * Board_Width / 2, -tileSize * Board_Height / 2, 0]] : [],
+        Chamfer_Top_Left ? [[-tileSize * Board_Width / 2, tileSize * Board_Height / 2, 0]] : []
+    );
+
+    //TODO: Modularize positioning (Outside Corners, inside corners, inside all) and holes (chamfer and screw holes)
+    //Bevel Everywhere
+    if (Chamfers == "Everywhere" && Screw_Mounting != "Everywhere" && Screw_Mounting != "Corners")
+        tag("remove")
+            grid_copies(spacing=tileSize, size=[Board_Width * tileSize, Board_Height * tileSize])
+                down(0.01)
+                    zrot(45)
+                        cuboid([tileChamfer, tileChamfer, Tile_Thickness + 0.02], anchor=BOT);
+    //Bevel Corners
+    if (Chamfers == "Corners" || (Chamfers == "Everywhere" && (Screw_Mounting == "Everywhere" || Screw_Mounting == "Corners")))
+        tag("remove")
+            move_copies(
+                cornerChamfers
+                //[
+                //[tileSize*Board_Width/2,tileSize*Board_Height/2,0],
+                //[-tileSize*Board_Width/2,tileSize*Board_Height/2,0],
+                //[tileSize*Board_Width/2,-tileSize*Board_Height/2,0],
+                //[-tileSize*Board_Width/2,-tileSize*Board_Height/2,0]
+                //]
+            )
+                down(0.01)
+                    zrot(45)
+                        cuboid([tileChamfer, tileChamfer, Tile_Thickness + 0.02], anchor=BOT);
+    //Screw Mount Corners
+    if (Screw_Mounting == "Corners")
+        tag("remove")
+            move_copies([[tileSize * Board_Width / 2 - tileSize, tileSize * Board_Height / 2 - tileSize, 0], [-tileSize * Board_Width / 2 + tileSize, tileSize * Board_Height / 2 - tileSize, 0], [tileSize * Board_Width / 2 - tileSize, -tileSize * Board_Height / 2 + tileSize, 0], [-tileSize * Board_Width / 2 + tileSize, -tileSize * Board_Height / 2 + tileSize, 0]])
+                up(Tile_Thickness + 0.01)
+                    cyl(d=Screw_Head_Diameter, h=Screw_Head_Inset > 0 ? Screw_Head_Inset : 0.01, anchor=TOP)
+                        attach(BOT, TOP) cyl(d2=Screw_Head_Diameter, d1=Screw_Diameter, h=Screw_Head_Is_CounterSunk ? tan((180 - Screw_Head_CounterSunk_Degree) / 2) * (Screw_Head_Diameter / 2 - Screw_Diameter / 2) - 0.01 : 0.01)
+                                attach(BOT, TOP) cyl(d=Screw_Diameter, h=Tile_Thickness + 0.02);
+    //Screw Mount Everywhere
+    if (Screw_Mounting == "Everywhere")
+        tag("remove")
+            grid_copies(spacing=tileSize, size=[(Board_Width - 2) * tileSize, (Board_Height - 2) * tileSize]) up(Tile_Thickness + 0.01)
+                    cyl(d=Screw_Head_Diameter, h=Screw_Head_Inset > 0 ? Screw_Head_Inset : 0.01, anchor=TOP)
+                        attach(BOT, TOP) cyl(d2=Screw_Head_Diameter, d1=Screw_Diameter, h=Screw_Head_Is_CounterSunk ? tan((180 - Screw_Head_CounterSunk_Degree) / 2) * (Screw_Head_Diameter / 2 - Screw_Diameter / 2) - 0.01 : 0.01)
+                                attach(BOT, TOP) cyl(d=Screw_Diameter, h=Tile_Thickness + 0.02);
+    if (Screw_Mounting == "By Row and Column")
+        translate([(Board_Width - 2) % max(1, Screw_Every_X_Columns) % 2 == 0 ? 0 : -tileSize / 2, (Board_Height - 2) % max(1, Screw_Every_X_Rows) % 2 == 0 ? 0 : tileSize / 2])
+            tag("remove") grid_copies(spacing=[tileSize * max(1, Screw_Every_X_Columns), tileSize * max(1, Screw_Every_X_Rows)], size=[(Board_Width - 2) * tileSize, (Board_Height - 2) * tileSize])
+                    up(Tile_Thickness + 0.01) cyl(d=Screw_Head_Diameter, h=Screw_Head_Inset > 0 ? Screw_Head_Inset : 0.01, anchor=TOP)
+                            attach(BOT, TOP) cyl(d2=Screw_Head_Diameter, d1=Screw_Diameter, h=Screw_Head_Is_CounterSunk ? tan((180 - Screw_Head_CounterSunk_Degree) / 2) * (Screw_Head_Diameter / 2 - Screw_Diameter / 2) - 0.01 : 0.01)
+                                    attach(BOT, TOP) cyl(d=Screw_Diameter, h=Tile_Thickness + 0.02);
+    if (Screw_Mounting == "Custom") {
+        start_point_x = -(Board_Width - 2) / 2 * tileSize;
+        start_point_y = (Board_Height - 2) / 2 * tileSize;
+        for (i = [0:min(len(Screw_Custom_Positions), (Board_Width - 1) * (Board_Height - 1)) - 1]) {
+            if (Screw_Custom_Positions[i] == "1") {
+                tag("remove")
+                    move_copies([[start_point_x + tileSize * (i % (Board_Width - 1)), start_point_y - tileSize * floor(i / (Board_Width - 1)), 0]])
+                        up(Tile_Thickness + 0.01) cyl(d=Screw_Head_Diameter, h=Screw_Head_Inset > 0 ? Screw_Head_Inset : 0.01, anchor=TOP)
+                                attach(BOT, TOP) cyl(d2=Screw_Head_Diameter, d1=Screw_Diameter, h=Screw_Head_Is_CounterSunk ? tan((180 - Screw_Head_CounterSunk_Degree) / 2) * (Screw_Head_Diameter / 2 - Screw_Diameter / 2) - 0.01 : 0.01)
+                                        attach(BOT, TOP) cyl(d=Screw_Diameter, h=Tile_Thickness + 0.02);
+            }
+        }
+    }
+
+  children();
+}
+
 
 module FillSpaceFullTiles() {
     // === Derived tile space ===
