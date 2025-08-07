@@ -68,6 +68,10 @@ Screw_Head_Diameter = 7.2;
 Screw_Head_Inset = 1;
 Screw_Head_Is_CounterSunk = true;
 Screw_Head_CounterSunk_Degree = 90;
+Generate_Screw_Cap = false;
+Screw_Cap_Thickness = 1; //0.1
+Screw_Cap_Tolerance = 0.1; //0.01
+Screw_Cap_Print_Orientation_Flip = false;
 
 /*[Advanced - Tile Parameters]*/
 //Customize tile sizes - openGrid standard is 28mm
@@ -241,36 +245,23 @@ module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, 
                                         cuboid([tileChamfer, tileChamfer, Tile_Thickness + 0.02], anchor=BOT);
                     //Screw Mount Corners
                     if (Screw_Mounting == "Corners")
-                        tag("remove")
-                            move_copies([[tileSize * Board_Width / 2 - tileSize, tileSize * Board_Height / 2 - tileSize, 0], [-tileSize * Board_Width / 2 + tileSize, tileSize * Board_Height / 2 - tileSize, 0], [tileSize * Board_Width / 2 - tileSize, -tileSize * Board_Height / 2 + tileSize, 0], [-tileSize * Board_Width / 2 + tileSize, -tileSize * Board_Height / 2 + tileSize, 0]])
-                                up(Tile_Thickness + 0.01)
-                                    cyl(d=Screw_Head_Diameter, h=Screw_Head_Inset > 0 ? Screw_Head_Inset : 0.01, anchor=TOP)
-                                        attach(BOT, TOP) cyl(d2=Screw_Head_Diameter, d1=Screw_Diameter, h=Screw_Head_Is_CounterSunk ? tan((180 - Screw_Head_CounterSunk_Degree) / 2) * (Screw_Head_Diameter / 2 - Screw_Diameter / 2) - 0.01 : 0.01)
-                                                attach(BOT, TOP) cyl(d=Screw_Diameter, h=Tile_Thickness + 0.02);
+                        move_copies([[tileSize * Board_Width / 2 - tileSize, tileSize * Board_Height / 2 - tileSize, 0], [-tileSize * Board_Width / 2 + tileSize, tileSize * Board_Height / 2 - tileSize, 0], [tileSize * Board_Width / 2 - tileSize, -tileSize * Board_Height / 2 + tileSize, 0], [-tileSize * Board_Width / 2 + tileSize, -tileSize * Board_Height / 2 + tileSize, 0]])
+                            screw_hole();
                     //Screw Mount Everywhere
                     if (Screw_Mounting == "Everywhere")
-                        tag("remove")
-                            grid_copies(spacing=tileSize, size=[(Board_Width - 2) * tileSize, (Board_Height - 2) * tileSize]) up(Tile_Thickness + 0.01)
-                                    cyl(d=Screw_Head_Diameter, h=Screw_Head_Inset > 0 ? Screw_Head_Inset : 0.01, anchor=TOP)
-                                        attach(BOT, TOP) cyl(d2=Screw_Head_Diameter, d1=Screw_Diameter, h=Screw_Head_Is_CounterSunk ? tan((180 - Screw_Head_CounterSunk_Degree) / 2) * (Screw_Head_Diameter / 2 - Screw_Diameter / 2) - 0.01 : 0.01)
-                                                attach(BOT, TOP) cyl(d=Screw_Diameter, h=Tile_Thickness + 0.02);
+                        grid_copies(spacing=tileSize, size=[(Board_Width - 2) * tileSize, (Board_Height - 2) * tileSize])
+                            screw_hole();
                     if (Screw_Mounting == "By Row and Column")
                         translate([(Board_Width - 2) % max(1, Screw_Every_X_Columns) % 2 == 0 ? 0 : -tileSize / 2, (Board_Height - 2) % max(1, Screw_Every_X_Rows) % 2 == 0 ? 0 : tileSize / 2])
-                            tag("remove") grid_copies(spacing=[tileSize * max(1, Screw_Every_X_Columns), tileSize * max(1, Screw_Every_X_Rows)], size=[(Board_Width - 2) * tileSize, (Board_Height - 2) * tileSize])
-                                    up(Tile_Thickness + 0.01) cyl(d=Screw_Head_Diameter, h=Screw_Head_Inset > 0 ? Screw_Head_Inset : 0.01, anchor=TOP)
-                                            attach(BOT, TOP) cyl(d2=Screw_Head_Diameter, d1=Screw_Diameter, h=Screw_Head_Is_CounterSunk ? tan((180 - Screw_Head_CounterSunk_Degree) / 2) * (Screw_Head_Diameter / 2 - Screw_Diameter / 2) - 0.01 : 0.01)
-                                                    attach(BOT, TOP) cyl(d=Screw_Diameter, h=Tile_Thickness + 0.02);
+                            grid_copies(spacing=[tileSize * max(1, Screw_Every_X_Columns), tileSize * max(1, Screw_Every_X_Rows)], size=[(Board_Width - 2) * tileSize, (Board_Height - 2) * tileSize])
+                                screw_hole();
                     if (Screw_Mounting == "Custom") {
                         start_point_x = -(Board_Width - 2) / 2 * tileSize;
                         start_point_y = (Board_Height - 2) / 2 * tileSize;
                         for (i = [0:min(len(Screw_Custom_Positions), (Board_Width - 1) * (Board_Height - 1)) - 1]) {
-                            if (Screw_Custom_Positions[i] == "1") {
-                                tag("remove")
-                                    move_copies([[start_point_x + tileSize * (i % (Board_Width - 1)), start_point_y - tileSize * floor(i / (Board_Width - 1)), 0]])
-                                        up(Tile_Thickness + 0.01) cyl(d=Screw_Head_Diameter, h=Screw_Head_Inset > 0 ? Screw_Head_Inset : 0.01, anchor=TOP)
-                                                attach(BOT, TOP) cyl(d2=Screw_Head_Diameter, d1=Screw_Diameter, h=Screw_Head_Is_CounterSunk ? tan((180 - Screw_Head_CounterSunk_Degree) / 2) * (Screw_Head_Diameter / 2 - Screw_Diameter / 2) - 0.01 : 0.01)
-                                                        attach(BOT, TOP) cyl(d=Screw_Diameter, h=Tile_Thickness + 0.02);
-                            }
+                            if (Screw_Custom_Positions[i] == "1")
+                                move_copies([[start_point_x + tileSize * (i % (Board_Width - 1)), start_point_y - tileSize * floor(i / (Board_Width - 1)), 0]])
+                                    screw_hole();
                         }
                     }
                     if (Connector_Holes) {
@@ -314,7 +305,24 @@ module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, 
         //end diff
         children();
     }
-
+    module screw_hole() {
+        Total_Screw_Inset = Generate_Screw_Cap && Stack_Count == 1 ? Screw_Cap_Thickness + 0.1 + Screw_Head_Inset : Screw_Head_Inset;
+        //idea for screw hole caps comes from Gavin F
+        if (Generate_Screw_Cap && Stack_Count == 1) {
+            Screw_Cap_Up_Distance =
+                Screw_Cap_Print_Orientation_Flip ? Tile_Thickness - Screw_Cap_Thickness / 2
+                : Full_or_Lite == "Full" ? Screw_Cap_Thickness / 2
+                : Screw_Cap_Thickness / 2 + Tile_Thickness - Lite_Tile_Thickness;
+            tag("keep")
+                right(Tile_Size / 2) fwd(Tile_Size / 2) up(Screw_Cap_Up_Distance)
+                            cyl(l=Screw_Cap_Thickness, d=Screw_Head_Diameter - Screw_Cap_Tolerance, $fn=64);
+        }
+        tag("remove")
+            up(Tile_Thickness + 0.01)
+                cyl(d=Screw_Head_Diameter, h=Total_Screw_Inset > 0 ? Total_Screw_Inset : 0.01, anchor=TOP, $fn=64)
+                    attach(BOT, TOP) cyl(d2=Screw_Head_Diameter, d1=Screw_Diameter, h=Screw_Head_Is_CounterSunk ? tan((180 - Screw_Head_CounterSunk_Degree) / 2) * (Screw_Head_Diameter / 2 - Screw_Diameter / 2) - 0.01 : 0.01, $fn=64)
+                            attach(BOT, TOP) cyl(d=Screw_Diameter, h=Tile_Thickness + 0.02, $fn=64);
+    }
     //BEGIN CUTOUT TOOL
     module connector_cutout_delete_tool(anchor = CENTER, spin = 0, orient = UP) {
         //Begin connector cutout profile
