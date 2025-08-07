@@ -320,8 +320,8 @@ module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, 
         tag("remove")
             up(Tile_Thickness + 0.01)
                 cyl(d=Screw_Head_Diameter, h=Total_Screw_Inset > 0 ? Total_Screw_Inset : 0.01, anchor=TOP, $fn=64)
-                    attach(BOT, TOP) cyl(d2=Screw_Head_Diameter, d1=Screw_Diameter, h=Screw_Head_Is_CounterSunk ? tan((180 - Screw_Head_CounterSunk_Degree) / 2) * (Screw_Head_Diameter / 2 - Screw_Diameter / 2) - 0.01 : 0.01, $fn=64)
-                            attach(BOT, TOP) cyl(d=Screw_Diameter, h=Tile_Thickness + 0.02, $fn=64);
+                    up(0.005) attach(BOT, TOP) cyl(d2=Screw_Head_Diameter, d1=Screw_Diameter, h=Screw_Head_Is_CounterSunk ? tan((180 - Screw_Head_CounterSunk_Degree) / 2) * (Screw_Head_Diameter - Screw_Diameter) / 2 : 0.01, $fn=64)
+                                attach(BOT, TOP) cyl(d=Screw_Diameter, h=Tile_Thickness + 0.02, $fn=64);
     }
     //BEGIN CUTOUT TOOL
     module connector_cutout_delete_tool(anchor = CENTER, spin = 0, orient = UP) {
