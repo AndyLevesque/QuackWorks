@@ -73,7 +73,7 @@ Screw_Custom_Positions = "011110";
 
 Screw_Diameter = 4.1;
 Screw_Head_Diameter = 7.2;
-Screw_Head_Inset = 1;
+Screw_Head_Inset = 1; //0.1
 Screw_Head_Is_CounterSunk = true;
 Screw_Head_CounterSunk_Degree = 90;
 Generate_Screw_Cap = false;
@@ -344,7 +344,7 @@ module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, 
         children();
     }
     module screw_hole() {
-        Total_Screw_Inset = Generate_Screw_Cap && Stack_Count == 1 ? Screw_Cap_Thickness + 0.1 + Screw_Head_Inset : Screw_Head_Inset;
+        Total_Screw_Inset = Generate_Screw_Cap && Stack_Count == 1 ? Screw_Cap_Thickness + Screw_Head_Inset : Screw_Head_Inset;
         //idea for screw hole caps comes from Gavin F
         if (Generate_Screw_Cap && Stack_Count == 1) {
             Screw_Cap_Up_Distance =
