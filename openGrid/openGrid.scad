@@ -76,9 +76,15 @@ Screw_Head_Diameter = 7.2;
 Screw_Head_Inset = 1; //0.1
 Screw_Head_Is_CounterSunk = true;
 Screw_Head_CounterSunk_Degree = 90;
+//Screw caps to cover screw holes after installation, enhancing the appearance of the openGrid board.
 Generate_Screw_Cap = false;
+//Notches make uninstalling screw caps easier. They are covered and do not affect the appearance unless used.
+Generate_Screw_Cap_Hidden_Notch = false;
+//When 'Generate Screw Cap' is checked, the depth of the screw hole will account for the screw cap thickness.
 Screw_Cap_Thickness = 1; //0.1
+//Tolerance for the screw cap diameter. Adjust this value if the screw caps are too loose or too tight.
 Screw_Cap_Tolerance = 0.1; //0.01
+//Align caps to the top of the board, convenient for printing facing down. Of course, you can also split the objects and adjust the orientation in the slicer.
 Screw_Cap_Print_Orientation_Flip = false;
 
 /*[Adhesive Base Options]*/
@@ -357,9 +363,14 @@ module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, 
         }
         tag("remove")
             up(Tile_Thickness + 0.01)
-                cyl(d=Screw_Head_Diameter, h=Total_Screw_Inset > 0 ? Total_Screw_Inset : 0.01, anchor=TOP, $fn=64)
+                cyl(d=Screw_Head_Diameter, h=Total_Screw_Inset > 0 ? Total_Screw_Inset : 0.01, anchor=TOP, $fn=64) {
                     up(0.005) attach(BOT, TOP) cyl(d2=Screw_Head_Diameter, d1=Screw_Diameter, h=Screw_Head_Is_CounterSunk ? tan((180 - Screw_Head_CounterSunk_Degree) / 2) * (Screw_Head_Diameter - Screw_Diameter) / 2 : 0.01, $fn=64)
                                 attach(BOT, TOP) cyl(d=Screw_Diameter, h=Tile_Thickness + 0.02, $fn=64);
+                    if (Total_Screw_Inset > 0 && Generate_Screw_Cap_Hidden_Notch){
+                        fwd(1.2) attach(FRONT, FRONT, align=TOP, inset=0.2, inside=true) cuboid([1, 2, Total_Screw_Inset - 0.2]);
+                        back(1.2) attach(BACK, BACK, align=TOP, inset=0.2, inside=true) cuboid([1, 2, Total_Screw_Inset - 0.2]);
+                    }
+                }
     }
     //BEGIN CUTOUT TOOL
     module connector_cutout_delete_tool(anchor = CENTER, spin = 0, orient = UP) {
