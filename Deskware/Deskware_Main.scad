@@ -779,7 +779,6 @@ module DrawerFront(height_units, inside_width, anchor=CENTER, orient=UP, spin=0)
     diff()
     cuboid([drawerFrontWidth, drawer_height, drawerFrontThickness], chamfer = drawerFrontChamfer, edges=BOT, anchor=anchor, orient=orient, spin=spin){
         //drawer dovetails
-        tag("keep")
         xcopies(spacing=inside_width_adjusted - 28 )
         attach(TOP, FRONT, overlap=0.01, align=BACK, inset=drawerFrontHeightReduction)
             cuboid([DrawerDovetailWidth+DrawerThickness*2-clearance*2, DrawerThickness+0.02, DrawerDovetailHeight*height_units - clearance], chamfer=DrawerThickness, edges=[FRONT+LEFT, FRONT+RIGHT]);
@@ -789,13 +788,19 @@ module DrawerFront(height_units, inside_width, anchor=CENTER, orient=UP, spin=0)
             back(Drawer_Pull_Height_Adjustement)
             xcopies(spacing = Drawer_Pull_Double_Screw_Hole_Distance_from_Center, n=DrawerPullHoleCount)
             attach(TOP, BOT, inside = true, shiftout=0.01)
-                cyl(d=Drawer_Pull_Screw_Diameter, h = drawerFrontThickness + 0.02, $fn = 25);
+                cyl(d=Drawer_Pull_Screw_Diameter, h = drawerFrontThickness + 0.03, $fn = 25);
         if(Drawer_Mounting_Method == "Handle - Printed"){
             if(DrawerHandle_Connection_Type == "Screw")
             tag("remove")
                 xcopies(spacing = handleDovetail_DistanceBetweenCenters)
                     attach(BOT, TOP, inside=true, shiftout=0.01)
-                        cyl(d=Outer_Diameter_Sm+0.25, h=drawerFrontThickness + DrawerThickness + 0.02, $fn=25);
+                        cyl(d=Outer_Diameter_Sm+0.25, h=drawerFrontThickness + DrawerThickness + 0.03, $fn=25);
+            tag("remove")
+                xcopies(spacing = handleDovetail_DistanceBetweenCenters)
+                    attach(TOP, TOP, inside=false, shiftout=0.01)
+                        cyl(d=Outer_Diameter_Sm+0.25, h=DrawerThickness-2.5, $fn=25)
+                            attach(BOT, TOP, overlap=0.01)
+                                cyl(d=15, h=DrawerThickness, $fn=25);
         }
         children();
     }
