@@ -24,6 +24,11 @@ Change Log:
 - 2025-07-12 (thanks mitufy!)
     - Screw positioning options
     - Formatting changes
+- 2025-10-25
+    - Added openGrid Heavy option 
+      - Like 2 openGrids back to back for rigidity in freestanding / side hung installations and double sided use
+      - Original Heavy design by @KYZ Design on Makerworld https://makerworld.com/en/@KYZDesign
+      - Implementation by sfcgeorge
 - 2025-07-13
     - New ability to specify an adhesive mounting type which prints a solid bottom on the board
 
@@ -39,7 +44,7 @@ Credit to
 include <BOSL2/std.scad>
 
 /*[Board Size]*/
-Full_or_Lite = "Lite"; //[Full, Lite]
+Full_or_Lite = "Lite"; //[Full, Lite, Heavy]
 Board_Width = 2;
 Board_Height = 2;
 
@@ -82,6 +87,8 @@ Adhesive_Base_Thickness = 0.6;
 Tile_Size = 28;
 Tile_Thickness = 6.8;
 Lite_Tile_Thickness = 4; //0.1
+Heavy_Tile_Thickness = 13.8;
+Heavy_Tile_Gap = 0.2; // Space between the two grid sides (prevents snaps from snagging)
 /*[Tile Stacking]*/
 //Stacking more than 6 tiles may time out. Desktop version recommended for larger stacks.
 Stack_Count = 1;
@@ -111,8 +118,9 @@ if (Fill_Space_Mode == "Fill Available Space")
 
 //GENERATE SINGLE TILES
 if (Fill_Space_Mode == "None") {
-    if (Full_or_Lite == "Full" && adjustedStackCount == 1) openGrid(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Tile_Thickness=Tile_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, Add_Adhesive_Base=Add_Adhesive_Base, anchor=BOT, Connector_Holes=Connector_Holes);
-    if (Full_or_Lite == "Lite" && adjustedStackCount == 1) openGridLite(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, Add_Adhesive_Base=Add_Adhesive_Base, anchor=BOT, Connector_Holes=Connector_Holes);
+    if (Full_or_Lite == "Full" && Stack_Count == 1) openGrid(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Tile_Thickness=Tile_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, anchor=BOT, Connector_Holes=Connector_Holes);
+    if (Full_or_Lite == "Lite" && Stack_Count == 1) openGridLite(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, anchor=BOT, Connector_Holes=Connector_Holes);
+    if (Full_or_Lite == "Heavy" && Stack_Count == 1) openGridHeavy(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, anchor=BOT, Connector_Holes=Connector_Holes);
 
     //GENERATE STACKED TILES
     if (Full_or_Lite == "Full" && adjustedStackCount > 1) {
@@ -128,8 +136,16 @@ if (Fill_Space_Mode == "None") {
         zcopies(spacing=Lite_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=adjustedStackCount, sp=[0, 0, Lite_Tile_Thickness])
             openGridLite(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, Connector_Holes=Connector_Holes, anchor=$idx % 2 == 0 ? TOP : BOT, orient=$idx % 2 == 0 ? UP : DOWN);
         if (Stacking_Method == "Interface Layer")
-            zcopies(spacing=Lite_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=adjustedStackCount - 1, sp=[0, 0, Lite_Tile_Thickness + Interface_Separation])
-                color("red") interfaceLayer2D(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Tile_Thickness=Tile_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, boardType="Lite", topSide=$idx % 2 == 0 ? false : true);
+            zcopies(spacing=Lite_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=Stack_Count - 1, sp=[0, 0, Lite_Tile_Thickness + Interface_Separation])
+                color("red") interfaceLayer2D(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, boardType="Lite", topSide=$idx % 2 == 0 ? false : true);
+    }
+
+    if (Full_or_Lite == "Heavy" && Stack_Count > 1) {
+        zcopies(spacing=Heavy_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=Stack_Count, sp=[0, 0, Heavy_Tile_Thickness])
+            openGridHeavy(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, Connector_Holes=Connector_Holes, anchor=$idx % 2 == 0 ? TOP : BOT, orient=$idx % 2 == 0 ? UP : DOWN);
+        if (Stacking_Method == "Interface Layer")
+            zcopies(spacing=Heavy_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=Stack_Count - 1, sp=[0, 0, Heavy_Tile_Thickness + Interface_Separation])
+                color("red") interfaceLayer2D(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, boardType="Lite", topSide=$idx % 2 == 0 ? false : true);
     }
 }
 
@@ -211,6 +227,48 @@ module openGridLite(Board_Width, Board_Height, tileSize = 28, Screw_Mounting = "
     }
 }
 
+module openGridHeavy(Board_Width, Board_Height, tileSize = 28, Screw_Mounting = "None", Chamfers = "None", anchor = CENTER, spin = 0, orient = UP, Connector_Holes = false) {
+    // Screw_Mounting options: [Everywhere, Corners, None]
+    // Bevel options: [Everywhere, Corners, None]
+    Tile_Thickness = 6.8;
+
+    attachable(anchor, spin, orient, size=[Board_Width * tileSize, Board_Height * tileSize, Heavy_Tile_Thickness]) {
+        render(convexity=4) union() {
+            up(Heavy_Tile_Gap / 2)
+                openGrid(
+                    Board_Width=Board_Width,
+                    Board_Height=Board_Height,
+                    tileSize=tileSize,
+                    Screw_Mounting=Screw_Mounting,
+                    Chamfers=Chamfers,
+                    anchor=BOT,
+                    Connector_Holes=Connector_Holes
+                );
+            down(Heavy_Tile_Gap / 2) linear_extrude(Heavy_Tile_Gap) projection(cut = true) 
+                openGrid(
+                    Board_Width=Board_Width,
+                    Board_Height=Board_Height,
+                    tileSize=tileSize,
+                    Screw_Mounting=Screw_Mounting,
+                    Chamfers=Chamfers,
+                    anchor=BOT,
+                    Connector_Holes=false // a little faster
+                );
+            down(Heavy_Tile_Gap / 2)
+                mirror([0, 0, 1]) openGrid(
+                    Board_Width=Board_Width,
+                    Board_Height=Board_Height,
+                    tileSize=tileSize,
+                    Screw_Mounting=Screw_Mounting,
+                    Chamfers=Chamfers,
+                    anchor=BOT,
+                    Connector_Holes=Connector_Holes
+                );
+        };
+        children();
+    }
+}
+
 module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, Screw_Mounting = "None", Chamfers = "None", Connector_Holes = false, anchor = CENTER, spin = 0, orient = UP) {
     //Screw_Mounting options: [Everywhere, Corners, None]
     //Bevel options: [Everywhere, Corners, None]
@@ -243,7 +301,7 @@ module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, 
                         //top and bottom connector holes
                         if (Board_Height > 1)
                             tag("remove")
-                                up(Full_or_Lite == "Full" ? Tile_Thickness / 2 : Tile_Thickness - connector_cutout_height / 2 - lite_cutout_distance_from_top) {
+                                up(Full_or_Lite != "Lite" ? Tile_Thickness / 2 : Tile_Thickness - connector_cutout_height / 2 - lite_cutout_distance_from_top) {
                                     //bottom connector holes
                                     if (Connector_Holes_Right)
                                         left(-tileSize * Board_Width / 2 - 0.005)
@@ -260,7 +318,7 @@ module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, 
                         //right and left connector holes
                         if (Board_Width > 1)
                             tag("remove")
-                                up(Full_or_Lite == "Full" ? Tile_Thickness / 2 : Tile_Thickness - connector_cutout_height / 2 - lite_cutout_distance_from_top) {
+                                up(Full_or_Lite != "Lite" ? Tile_Thickness / 2 : Tile_Thickness - connector_cutout_height / 2 - lite_cutout_distance_from_top) {
                                     //right connector holes
                                     if (Connector_Holes_Top)
                                         fwd(-tileSize * Board_Height / 2 - 0.005)
@@ -347,7 +405,16 @@ module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, 
 
         CorderSquareWidth = sqrt(Corner_Square_Thickness ^ 2 + Corner_Square_Thickness ^ 2) + Intersection_Distance;
 
-        full_tile_profile = [
+
+        full_tile_profile = Full_or_Lite == "Heavy" ? [
+            [0, 0],
+            [Outside_Extrusion, 0],
+            [Outside_Extrusion, Tile_Thickness - Top_Capture_Initial_Inset],
+            [Outside_Extrusion + insideExtrusion, Tile_Thickness - Top_Capture_Initial_Inset + Inside_Grid_Middle_Chamfer],
+            [Outside_Extrusion + insideExtrusion, Tile_Thickness - Inside_Grid_Top_Chamfer],
+            [Outside_Extrusion + insideExtrusion - Inside_Grid_Top_Chamfer, Tile_Thickness],
+            [0, Tile_Thickness],
+        ] : [
             [0, 0],
             [Outside_Extrusion + insideExtrusion - Inside_Grid_Top_Chamfer, 0],
             [Outside_Extrusion + insideExtrusion, Inside_Grid_Top_Chamfer],
@@ -359,6 +426,7 @@ module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, 
             [Outside_Extrusion + insideExtrusion - Inside_Grid_Top_Chamfer, Tile_Thickness],
             [0, Tile_Thickness],
         ];
+
         full_tile_corners_profile = [
             [0, 0],
             [cornerOffset - cornerChamfer, 0],
@@ -496,6 +564,14 @@ module FillSpaceFullTiles() {
                 Chamfers=Chamfers, anchor=BOT,
                 Connector_Holes=Connector_Holes
             );
+        else if (Full_or_Lite == "Heavy")
+            openGridHeavy(
+                Board_Width=w, Board_Height=h,
+                tileSize=Tile_Size,
+                Screw_Mounting=Screw_Mounting,
+                Chamfers=Chamfers, anchor=BOT,
+                Connector_Holes=Connector_Holes
+            );
         else
             openGridLite(
                 Board_Width=w,
@@ -590,13 +666,22 @@ module FillSpaceClipOneSide() {
 
         // Intersection: drawer cube ∩ translated, centered openGrid(8,8)
         intersection() {
-            cube([Space_Width + num_full_cols * Tile_Spacing, Space_Depth + num_full_rows * Tile_Spacing, 10], center=false);
+            cube([Space_Width + num_full_cols * Tile_Spacing, Space_Depth + num_full_rows * Tile_Spacing, Heavy_Tile_Thickness + 1], center=false);
             translate([cx, cy, 0]) if (Full_or_Lite == "Full")
                 openGrid(
                     Board_Width=Max_Tile_Width,
                     Board_Height=Max_Tile_Depth,
                     tileSize=Tile_Size,
                     Tile_Thickness=Tile_Thickness,
+                    Screw_Mounting=Screw_Mounting,
+                    Chamfers=Chamfers, anchor=BOT,
+                    Connector_Holes=Connector_Holes
+                );
+            else if (Full_or_Lite == "Heavy")
+                openGridHeavy(
+                    Board_Width=Max_Tile_Width,
+                    Board_Height=Max_Tile_Depth,
+                    tileSize=Tile_Size,
                     Screw_Mounting=Screw_Mounting,
                     Chamfers=Chamfers, anchor=BOT,
                     Connector_Holes=Connector_Holes
