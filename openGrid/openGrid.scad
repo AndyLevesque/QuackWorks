@@ -24,13 +24,14 @@ Change Log:
 - 2025-07-12 (thanks mitufy!)
     - Screw positioning options
     - Formatting changes
-- 2025-10-25
+- 2025-07-13 (thanks ColinCmabell!)
+    - New ability to specify an adhesive mounting type which prints a solid bottom on the board 
+- 2025-10-25 (thanks KYZ Design and sfcgeorge!)
     - Added openGrid Heavy option 
       - Like 2 openGrids back to back for rigidity in freestanding / side hung installations and double sided use
       - Original Heavy design by @KYZ Design on Makerworld https://makerworld.com/en/@KYZDesign
       - Implementation by sfcgeorge
-- 2025-07-13
-    - New ability to specify an adhesive mounting type which prints a solid bottom on the board
+
 
 
 Credit to 
@@ -118,9 +119,9 @@ if (Fill_Space_Mode == "Fill Available Space")
 
 //GENERATE SINGLE TILES
 if (Fill_Space_Mode == "None") {
-    if (Full_or_Lite == "Full" && Stack_Count == 1) openGrid(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Tile_Thickness=Tile_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, anchor=BOT, Connector_Holes=Connector_Holes);
-    if (Full_or_Lite == "Lite" && Stack_Count == 1) openGridLite(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, anchor=BOT, Connector_Holes=Connector_Holes);
-    if (Full_or_Lite == "Heavy" && Stack_Count == 1) openGridHeavy(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, anchor=BOT, Connector_Holes=Connector_Holes);
+    if (Full_or_Lite == "Full" && adjustedStackCount == 1) openGrid(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Tile_Thickness=Tile_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, Add_Adhesive_Base=Add_Adhesive_Base, anchor=BOT, Connector_Holes=Connector_Holes);
+    if (Full_or_Lite == "Lite" && adjustedStackCount == 1) openGridLite(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, Add_Adhesive_Base=Add_Adhesive_Base, anchor=BOT, Connector_Holes=Connector_Holes);
+    if (Full_or_Lite == "Heavy" && adjustedStackCount == 1) openGridHeavy(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, anchor=BOT, Connector_Holes=Connector_Holes);
 
     //GENERATE STACKED TILES
     if (Full_or_Lite == "Full" && adjustedStackCount > 1) {
@@ -136,15 +137,15 @@ if (Fill_Space_Mode == "None") {
         zcopies(spacing=Lite_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=adjustedStackCount, sp=[0, 0, Lite_Tile_Thickness])
             openGridLite(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, Connector_Holes=Connector_Holes, anchor=$idx % 2 == 0 ? TOP : BOT, orient=$idx % 2 == 0 ? UP : DOWN);
         if (Stacking_Method == "Interface Layer")
-            zcopies(spacing=Lite_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=Stack_Count - 1, sp=[0, 0, Lite_Tile_Thickness + Interface_Separation])
+            zcopies(spacing=Lite_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=adjustedStackCount - 1, sp=[0, 0, Lite_Tile_Thickness + Interface_Separation])
                 color("red") interfaceLayer2D(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, boardType="Lite", topSide=$idx % 2 == 0 ? false : true);
     }
 
-    if (Full_or_Lite == "Heavy" && Stack_Count > 1) {
-        zcopies(spacing=Heavy_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=Stack_Count, sp=[0, 0, Heavy_Tile_Thickness])
+    if (Full_or_Lite == "Heavy" && adjustedStackCount > 1) {
+        zcopies(spacing=Heavy_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=adjustedStackCount, sp=[0, 0, Heavy_Tile_Thickness])
             openGridHeavy(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, Connector_Holes=Connector_Holes, anchor=$idx % 2 == 0 ? TOP : BOT, orient=$idx % 2 == 0 ? UP : DOWN);
         if (Stacking_Method == "Interface Layer")
-            zcopies(spacing=Heavy_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=Stack_Count - 1, sp=[0, 0, Heavy_Tile_Thickness + Interface_Separation])
+            zcopies(spacing=Heavy_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=adjustedStackCount - 1, sp=[0, 0, Heavy_Tile_Thickness + Interface_Separation])
                 color("red") interfaceLayer2D(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, boardType="Lite", topSide=$idx % 2 == 0 ? false : true);
     }
 }
