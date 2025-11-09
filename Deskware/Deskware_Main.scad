@@ -51,7 +51,7 @@ include <BOSL2/threading.scad>
 
 
 /*[Core Section Dimensions]*/
-//Width (in mm) from riser center to riser center. 84mm increments (2 Gridfinity units / 6 openGrid units)
+//Width (in mm) from riser center to riser center. 84mm increments (2 Gridfinity units / 3 openGrid units)
 Core_Section_Width = 196; //[112:84:952] 
 //Depth (in mm) from front of the riser to the rear of the backer (top plate will be deeper out the front). 28mm increments (openGrid units).
 Core_Section_Depth = 196.5; //[112.5:84:840.5]
@@ -394,12 +394,17 @@ module mw_assembly_view() {
         arc_series_gap = Show_Connected ? clearance : 50;
         if(Enable_Curve_Mode){
             fwd(4+9)
-            riserBuilderPath(Riser_Depth, Riser_Height, arc=Degrees_of_Arc, radius = Core_Radius, $fn=150, anchor=BOT);
-            up(Riser_Height + clearance + arc_series_gap)
-                basePlateBuilderPath(Base_Plate_Depth, Base_Plate_Width, arc=Degrees_of_Arc, radius = Core_Radius, anchor=BOT);
-            up(Riser_Height + Base_Plate_Thickness + clearance + arc_series_gap*2)
-                fwd(Top_Plate_Baseplate_Depth_Difference)
-                    topPlateBuilderPath(Top_Plate_Depth, Core_Section_Width, arc=Degrees_of_Arc, radius = Core_Radius, totalHeight = Top_Plate_Thickness + topLipHeight, bottomChamfer = Top_Bot_Plates_Interface_Chamfer*2, topChamfer = topChamfer, topInset = topLipWidth, topRecess = topLipHeight, $fn=150, anchor=BOT);
+            if(Show_Risers)
+                riserBuilderPath(Riser_Depth, Riser_Height, arc=Degrees_of_Arc, radius = Core_Radius, $fn=150, anchor=BOT);
+
+            if(Show_Baseplate)
+                up(Riser_Height + clearance + arc_series_gap)
+                    basePlateBuilderPath(Base_Plate_Depth, Base_Plate_Width, arc=Degrees_of_Arc, radius = Core_Radius, anchor=BOT);
+
+            if(Show_Top_Plate)
+                up(Riser_Height + Base_Plate_Thickness + clearance + arc_series_gap*2)
+                    fwd(Top_Plate_Baseplate_Depth_Difference)
+                        topPlateBuilderPath(Top_Plate_Depth, Core_Section_Width, arc=Degrees_of_Arc, radius = Core_Radius, totalHeight = Top_Plate_Thickness + topLipHeight, bottomChamfer = Top_Bot_Plates_Interface_Chamfer*2, topChamfer = topChamfer, topInset = topLipWidth, topRecess = topLipHeight, $fn=150, anchor=BOT);
         }
     }
     else if (Enable_Top_Plate_Customizer){
@@ -1117,10 +1122,12 @@ module riserBuilderPath(depth, height, arc = 0, radius = 30, anchor=CENTER,spin=
             path_sweep(riserPath, riserExtrusionPath, anchor=anchor,spin=spin,orient=orient) {
                 //HOK Connectors
                 attach(["start", "end"], BOT, inside=true)
-                    zcopies(spacing = HOK_Connector_Inset*2 - clearance)
-                    xcopies(spacing = HOK_Connector_Spacing_Depth)
-                    up(Riser_Width/2-clearance)
-                    xrot(90) zrot(90) down(Riser_Height/2 + 0.01)
+                    zcopies(spacing = HOK_Connector_Inset*2 - clearance)  // creates side-by-side pair
+                    xcopies(spacing = HOK_Connector_Spacing_Depth)  // creates front and back copies
+                    up(Riser_Width/2-clearance)  // moves inward
+                    xrot_copies([-90, 90])  // -90 puts them on the bottom, 90 puts them on the top
+                    rot(90)  // rotates about the front-to-back axis of the riser
+                    down(Riser_Height/2 + 0.01)
                     HOKConnectorDeleteTool(spin=90);
                 //drawer slides
                 attach(["start", "end"], BOT, inside=true, shiftout=-Slide_Width/2 + 0.01)
