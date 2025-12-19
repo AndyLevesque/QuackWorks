@@ -27,6 +27,8 @@ Base_Top_or_Both = "Both"; // [Base, Top, Both]
 Channel_Width_in_Units_1 = 2;  // Ensure this is an integer
 //Width (X axis) of channel in units. Default unit is 25mm
 Channel_Width_in_Units_2 = 1;  // Ensure this is an integer
+// Align the narrow part of the channel to one side instead of centering it
+Edge_Align = "None"; // [None, Left, Right]
 //Height (Z axis) inside the channel (in mm)
 Channel_Internal_Height_1 = 18; //[12:6:72]
 //Height (Z axis) inside the channel (in mm)
@@ -134,14 +136,28 @@ straightHeightChangeChannelTop(lengthMM = Channel_Length_Units * Grid_Size, widt
 */
 
 module straightHeightChangeChannelTop(lengthMM, widthMM1, widthMM2, heightMM1 = 12, heightMM2 = 18, topThickness = 2, anchor, spin, orient){
+    // Calculate alignment offsets for each channel section
+    max_width = max(Channel_Width_in_Units_1, Channel_Width_in_Units_2);
+    
+    // Channel 1 offset: For edge alignment, shift by half the difference in units. For centering, shift odd widths by half grid unit.
+    channel1_edge_offset = Edge_Align == "Left" ? (max_width - Channel_Width_in_Units_1) * Grid_Size / 2 :
+                           Edge_Align == "Right" ? -(max_width - Channel_Width_in_Units_1) * Grid_Size / 2 : 0;
+    channel1_center_offset = Channel_Width_in_Units_1 % 2 == 1 ? Grid_Size / 2 : 0; // 12.5mm for odd widths
+    channel1_offset = Edge_Align == "None" ? channel1_center_offset : channel1_edge_offset;
+    
+    // Channel 2 offset: Same logic as channel 1 but for the second channel width
+    channel2_edge_offset = Edge_Align == "Left" ? (max_width - Channel_Width_in_Units_2) * Grid_Size / 2 :
+                           Edge_Align == "Right" ? -(max_width - Channel_Width_in_Units_2) * Grid_Size / 2 : 0;
+    channel2_center_offset = Channel_Width_in_Units_2 % 2 == 1 ? Grid_Size / 2 : 0; // 12.5mm for odd widths
+    channel2_offset = Edge_Align == "None" ? channel2_center_offset : channel2_edge_offset;
+    
     attachable(anchor, spin, orient, size=[max(widthMM1, widthMM2), lengthMM, topHeight + (heightMM2-12)]){
         skin(
             [
-                //if the channel width is odd, shift over half a cell to remain on the grid
-                left(Channel_Width_in_Units_1 % 2 == 1 ? 12.5 :  0, newTopProfileFull(heightMM = Channel_Internal_Height_1, totalWidth = widthMM1, topThickness = topThickness)),
-                left(Channel_Width_in_Units_1 % 2 == 1 ? 12.5 :  0, newTopProfileFull(heightMM = Channel_Internal_Height_1, totalWidth = widthMM1, topThickness = topThickness)),
-                left(Channel_Width_in_Units_2 % 2 == 1 ? 12.5 :  0, newTopProfileFull(heightMM = Channel_Internal_Height_2, totalWidth = widthMM2, topThickness = topThickness)),
-                left(Channel_Width_in_Units_2 % 2 == 1 ? 12.5 :  0, newTopProfileFull(heightMM = Channel_Internal_Height_2, totalWidth = widthMM2, topThickness = topThickness))
+                left(channel1_offset, newTopProfileFull(heightMM = Channel_Internal_Height_1, totalWidth = widthMM1, topThickness = topThickness)),
+                left(channel1_offset, newTopProfileFull(heightMM = Channel_Internal_Height_1, totalWidth = widthMM1, topThickness = topThickness)),
+                left(channel2_offset, newTopProfileFull(heightMM = Channel_Internal_Height_2, totalWidth = widthMM2, topThickness = topThickness)),
+                left(channel2_offset, newTopProfileFull(heightMM = Channel_Internal_Height_2, totalWidth = widthMM2, topThickness = topThickness))
             ],
             z=[0,lengthMM/2-Rise_Distance/2+Rise_Offset,lengthMM/2+Rise_Distance/2+Rise_Offset,lengthMM],
             slices = 0
@@ -153,6 +169,21 @@ module straightHeightChangeChannelTop(lengthMM, widthMM1, widthMM2, heightMM1 = 
 
 //STRAIGHT CHANNELS
 module straightChangeChannelBase(lengthMM, widthMM1, widthMM2,anchor, spin, orient){
+    // Calculate alignment offsets for each channel section (same logic as top module)
+    max_width = max(Channel_Width_in_Units_1, Channel_Width_in_Units_2);
+    
+    // Channel 1 offset: For edge alignment, shift by half the difference in units. For centering, shift odd widths by half grid unit.
+    channel1_edge_offset = Edge_Align == "Left" ? (max_width - Channel_Width_in_Units_1) * Grid_Size / 2 :
+                           Edge_Align == "Right" ? -(max_width - Channel_Width_in_Units_1) * Grid_Size / 2 : 0;
+    channel1_center_offset = Channel_Width_in_Units_1 % 2 == 1 ? Grid_Size / 2 : 0; // 12.5mm for odd widths
+    channel1_offset = Edge_Align == "None" ? channel1_center_offset : channel1_edge_offset;
+    
+    // Channel 2 offset: Same logic as channel 1 but for the second channel width
+    channel2_edge_offset = Edge_Align == "Left" ? (max_width - Channel_Width_in_Units_2) * Grid_Size / 2 :
+                           Edge_Align == "Right" ? -(max_width - Channel_Width_in_Units_2) * Grid_Size / 2 : 0;
+    channel2_center_offset = Channel_Width_in_Units_2 % 2 == 1 ? Grid_Size / 2 : 0; // 12.5mm for odd widths
+    channel2_offset = Edge_Align == "None" ? channel2_center_offset : channel2_edge_offset;
+    
     attachable(anchor, spin, orient, size=[max(widthMM1, widthMM2), lengthMM, baseHeight]){
         down(maxY(selectBaseProfile)/2)
         diff("holes"){
@@ -161,18 +192,19 @@ module straightChangeChannelBase(lengthMM, widthMM1, widthMM2,anchor, spin, orie
         xrot(90)
         skin(
             [
-                left(Channel_Width_in_Units_1 % 2 == 1 ? 12.5 :  0, newBaseProfileFull(totalWidth = widthMM1)),
-                left(Channel_Width_in_Units_1 % 2 == 1 ? 12.5 :  0, newBaseProfileFull(totalWidth = widthMM1)),
-                left(Channel_Width_in_Units_2 % 2 == 1 ? 12.5 :  0, newBaseProfileFull(totalWidth = widthMM2)),
-                left(Channel_Width_in_Units_2 % 2 == 1 ? 12.5 :  0, newBaseProfileFull(totalWidth = widthMM2))
+                left(channel1_offset, newBaseProfileFull(totalWidth = widthMM1)),
+                left(channel1_offset, newBaseProfileFull(totalWidth = widthMM1)),
+                left(channel2_offset, newBaseProfileFull(totalWidth = widthMM2)),
+                left(channel2_offset, newBaseProfileFull(totalWidth = widthMM2))
             ],
             z=[0,lengthMM/2-Rise_Distance/2+Rise_Offset,lengthMM/2+Rise_Distance/2+Rise_Offset,lengthMM],
             slices = 0
             );
-        tag("holes")  back(lengthMM/2-Grid_Size/2)  left(Channel_Width_in_Units_1 % 2 == 1 ? 12.5 :  0)
+        // Mount holes positioned with the same alignment as the channel profiles
+        tag("holes")  back(lengthMM/2-Grid_Size/2)  left(channel1_offset)
             xcopies(spacing=Grid_Size, n = Channel_Width_in_Units_1) 
                 mount_point(Mounting_Method);
-        tag("holes")  fwd(lengthMM/2-Grid_Size/2)  left(Channel_Width_in_Units_2 % 2 == 1 ? 12.5 :  0)
+        tag("holes")  fwd(lengthMM/2-Grid_Size/2)  left(channel2_offset)
             xcopies(spacing=Grid_Size, n = Channel_Width_in_Units_2) 
                 mount_point(Mounting_Method);
         }
