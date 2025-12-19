@@ -39,6 +39,7 @@ customBackHeight = 60;
 backHeight = overrideBackHeight ? customBackHeight : 15+15*unitsDeep;
 removeBase = true;
 bracketDepthPercentage = 50; //[0:1:100]
+baseOffset = 0; // Offset between backplate and gridfinity base
 
 /*[Slot Customization]*/
 // Version of multiconnect (dimple or snap)
@@ -72,7 +73,8 @@ GOEWS_Cleat_custom_height_from_top_of_back = 11.24;
 /*[Hidden]*/
 adjustedBaseThickness = removeBase ? 0 : baseThickness;
 totalWidth = unitsWide*42+rimThickness*2;
-totalDepth = unitsDeep*42+rimThickness;
+gridDepth = unitsDeep*42;
+totalDepth = gridDepth+rimThickness+baseOffset;
 bracketDepth = totalDepth*bracketDepthPercentage/100;
 totalHeight = backHeight;
 
@@ -92,7 +94,7 @@ Connection_Standard =
 //begin build
 translate(v = [-totalWidth/2,-totalDepth/2]) 
 union(){
-    translate(v = [rimThickness,0,0]) 
+    translate(v = [rimThickness,baseOffset,0]) 
         gridfinity_grid(xCount = unitsWide, yCount = unitsDeep);
     //BEGIN BACKERS
     if(Connection_Standard == "Multipoint"){
@@ -126,7 +128,7 @@ union(){
     difference(){
             translate(v = [0,0,-adjustedBaseThickness+0.01]) 
                 cube([totalWidth,totalDepth,4.65+adjustedBaseThickness+additionalRimHeight]);
-            translate(v = [rimThickness,0,0]) 
+            translate(v = [rimThickness,baseOffset,0]) 
                 cube([totalWidth-rimThickness*2-0.02,totalDepth-rimThickness-0.02,6+additionalRimHeight]);
     }
     //bracket
