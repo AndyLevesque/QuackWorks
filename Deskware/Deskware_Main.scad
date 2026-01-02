@@ -36,6 +36,9 @@ Change Log:
     - Updated assembly view to only show one drawer (in top position) to reduce render time and prevent MakerWorld timeouts
 - 2025-08-10 v1.5
     - Riser Customizer - Added split height option
+- 2025-11-08 v1.5.1
+    - Curve section - Fix HOK connector placement on curved riser (thanks ilg!)
+    - Drawers - Fix screw cutout for some custom drawer sizes (thanks ilg!)
      
 
 Credit to 
@@ -113,7 +116,7 @@ Primary_Color = "#dadada"; // color
 Drawer_Front_Color = "#dadada"; // color
 Top_Plate_Color = "#dadada"; // color
 Drawer_Handle_Color = "#dadada"; // color
-//dadada 00cf30 2e2e2e
+//dadada 00cf30 2e2e2e 
 
 /*[Advanced Options]*/
 //Additional reach of top plate support built into the baseplate. 1 = 1 openGrid unit.

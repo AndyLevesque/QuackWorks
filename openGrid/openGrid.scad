@@ -79,7 +79,7 @@ Screw_Head_CounterSunk_Degree = 90;
 
 /*[Adhesive Base Options]*/
 //[Lite only] Adds a backing which allows you to adhere with double sided tape
-Add_Adhesive_Base = true;
+Add_Adhesive_Base = false;
 //0.6 allows space for a channel to fit into the board.
 Adhesive_Base_Thickness = 0.6;
 
