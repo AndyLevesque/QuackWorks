@@ -30,7 +30,7 @@ Top_or_Bottom = "Both"; //[Top, Bottom, Both]
 /*[Base Options]*/
 //Not yet implemented
 Selected_Base = "Gridfinity"; //[Gridfinity, openGrid, Flat, None]
-openGrid_Full_or_Lite = "Lite"; //[Full, Lite]
+openGrid_Standard_or_Lite = "Lite"; //[Standard, Lite]
 //openGrid Directional Snaps are for vertical mounting and additional strength against downward forces. See arrow on bottom of snap for direction of up.
 openGrid_Directional_Snap = false;
 //Orientation of openGrid Directional Snap. See arrow on bottom for orientation of up. Rotate by selecting 1 - 4.
@@ -87,7 +87,7 @@ grid_y = 1;
 Base_Chamfer = 
     Selected_Base == "Gridfinity" && !Custom_Base_Chamfer && custom_grid_size == 0 ? 5 : //default gridfinity baseplate chamfer size
     Selected_Base == "Flat" && !Custom_Base_Chamfer ? 4 : //default flat baseplate chamfer size
-    Selected_Base == "openGrid" && !Custom_Base_Chamfer ? 3 : //default openGrid full baseplate chamfer size
+    Selected_Base == "openGrid" && !Custom_Base_Chamfer ? 3 : //default openGrid Standard baseplate chamfer size
     Custom_Base_Chamfer_Size;
 
 /*[Hidden]*/
@@ -107,8 +107,8 @@ grid_size =
 calculated_base_height = 
     Selected_Base == "Gridfinity" ? 4.75 + Added_Base_Thickness : //0.6 is the additional height for the gridfinity baseplate by default. Update this if parameterized. 
     Selected_Base == "Flat" ? Flat_Base_Thickness:
-    Selected_Base == "openGrid" && openGrid_Full_or_Lite == "Full" ? 6.8:
-    Selected_Base == "openGrid" && openGrid_Full_or_Lite == "Lite" ? 3.4:
+    Selected_Base == "openGrid" && openGrid_Standard_or_Lite == "Standard" ? 6.8:
+    Selected_Base == "openGrid" && openGrid_Standard_or_Lite == "Lite" ? 3.4:
     0;
 
 ///*[Straight Channel]*/
@@ -322,7 +322,7 @@ module neoGridBase(Channel_Length, grid_size){
             cuboid( [grid_size, Channel_Length, Flat_Base_Thickness], chamfer=0.5, except=BOT, anchor=BOT);
         if(Selected_Base == "openGrid")
             zrot(90*openGrid_Directional_Snap_Orientation)
-            openGridSnap(lite= (openGrid_Full_or_Lite == "Full" ? false : true), directional=openGrid_Directional_Snap, anchor=BOT, spin=0, orient=UP);
+            openGridSnap(lite= (openGrid_Standard_or_Lite == "Standard" ? false : true), directional=openGrid_Directional_Snap, anchor=BOT, spin=0, orient=UP);
         if(Print_Specs)
             baseText();
 }
@@ -739,11 +739,11 @@ module openGridSnap(lite=false, directional=false, orient, anchor, spin){
 	}
 
 	w=24.80;
-	fulldiff=3.4;
-	h=lite ? 3.4 : fulldiff*2;
+	standard_diff=3.4;
+	h=lite ? 3.4 : standard_diff*2;
 	attachable(orient=orient, anchor=anchor, spin=spin, size=[w,w,h]){
 		zmove(-h/2) difference(){
-			core=3 + (lite ? 0 : fulldiff);
+			core=3 + (lite ? 0 : standard_diff);
 			top_h=0.4; 
 			top_nub_h=1.1;
 
@@ -759,7 +759,7 @@ module openGridSnap(lite=false, directional=false, orient, anchor, spin){
 					zrot_copies(n=4) move([w/2-offs,w/2-offs,core]) rotate([180, 0, 135]) wedge(size=[6.817,top_nub_h,top_nub_h], anchor=CENTER+BOTTOM);
 				};
 				//bottom nub
-				zmove(lite ? 0 : fulldiff) zrot_copies(n=4)
+				zmove(lite ? 0 : standard_diff) zrot_copies(n=4)
 					if (!directional || ($idx==1 || $idx==3))
 					openGridSnapNub(
 						w=w,
@@ -776,7 +776,7 @@ module openGridSnap(lite=false, directional=false, orient, anchor, spin){
 				//directional nubs 
 				 if (directional) {
 					//front directional nub
-					zmove(lite ? 0 : fulldiff) openGridSnapNub(
+					zmove(lite ? 0 : standard_diff) openGridSnapNub(
 						w=w,
 						nub_h=0,
 						nub_w=14,
@@ -790,7 +790,7 @@ module openGridSnap(lite=false, directional=false, orient, anchor, spin){
 					);
 					 
 					//rear directional nub
-					zrot(180) zmove(lite ? 0 : fulldiff) openGridSnapNub(
+					zrot(180) zmove(lite ? 0 : standard_diff) openGridSnapNub(
 						w=w,
 						nub_h=0.65,
 						nub_w=10.8,
@@ -808,17 +808,17 @@ module openGridSnap(lite=false, directional=false, orient, anchor, spin){
 			zrot_copies(n=4)
 				move([w/2-1, 0, 0])
 				if (!directional || $idx==1 || $idx==3)
-					cuboid([0.6,12.4,2.8 + (lite ? 0 : fulldiff)], rounding=0.3, $fn=100, edges="Z", anchor=BOTTOM);
+					cuboid([0.6,12.4,2.8 + (lite ? 0 : standard_diff)], rounding=0.3, $fn=100, edges="Z", anchor=BOTTOM);
 			//bottom click holes for rear directional
 			if (directional) {
-				zrot(180) move([w/2-1, 0, 0.599]) cuboid([0.6, 12.4, 2.2 + (lite ? 0 : fulldiff) ], rounding=0.3, $fn=100, edges="Z", anchor=BOTTOM);
+				zrot(180) move([w/2-1, 0, 0.599]) cuboid([0.6, 12.4, 2.2 + (lite ? 0 : standard_diff) ], rounding=0.3, $fn=100, edges="Z", anchor=BOTTOM);
 				zrot(180) move([w/2-1.2, 0, 0]) prismoid(size1=[0.6, 12.4], size2=[0.6, 12.4], h=0.6, shift=[0.2,0], rounding=0.3, $fn=100);
 				zrot(180) move([w/2-0.1, 0, 0]) rotate([0,0,0]) prismoid(size1=[0.2, 20], size2=[0, 20], shift=[0.1,0], h=0.6, anchor=BOTTOM);
 			};
 
 			//bottom wall click holes
 			zrot_copies(n=4)
-				move([w/2, 0, 2.2 + (lite ? 0 : fulldiff)])
+				move([w/2, 0, 2.2 + (lite ? 0 : standard_diff)])
 				if (!directional || ($idx>0))
 					cuboid([1.4,12,0.4], anchor=BOTTOM);
 

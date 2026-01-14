@@ -45,7 +45,7 @@ Chamfer = 1; //0.1
 /*[Advanced - Tile Parameters]*/
 //Customize tile sizes - openGrid standard is 28mm
 Tile_Size = 28;
-//Thickness of the tile (full only)
+//Thickness of the tile (standard only)
 Tile_Thickness = 6.8;
 
 /*[Advanced - Slot Customization]*/

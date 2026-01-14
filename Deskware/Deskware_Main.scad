@@ -86,7 +86,7 @@ Top_Plate_Lip_Width = 0.5;
 
 /*[Top Plate Customizer]*/
 Enable_Top_Plate_Customizer = false;
-Top_Plate_Customization = "Gridfinity Top"; //[Gridfinity Top, openGrid Lite Top, openGrid Full Top, Wireless Charger]
+Top_Plate_Customization = "Gridfinity Top"; //[Gridfinity Top, openGrid Lite Top, openGrid Standard Top, Wireless Charger]
 //Specify a specific grid width. Leave Zero (0) for standard.
 Custom_Grid_Width = 0;
 //Specify a specific grid width. Leave Zero (0) for standard.
@@ -730,7 +730,7 @@ module customizableTopPlateCore(width, depth, spin = 0, orient = UP, anchor=CENT
                     cuboid([Custom_Grid_Depth == 0 ? Available_Gridfinity_Depth_Units * 42 : Custom_Grid_Depth * 42 , Custom_Grid_Width == 0 ? Available_Gridfinity_Width_Units * 42 : Custom_Grid_Width * 42, 5]);
                 if(Top_Plate_Customization == "openGrid Lite Top")
                     cuboid([Custom_Grid_Depth == 0 ? Available_openGrid_Depth_Units * 28 : Custom_Grid_Depth * 28 , Custom_Grid_Width == 0 ? Available_openGrid_Width_Units * 28 : Custom_Grid_Width * 28, 4]);
-                if(Top_Plate_Customization == "openGrid Full Top")
+                if(Top_Plate_Customization == "openGrid Standard Top")
                     cuboid([Custom_Grid_Depth == 0 ? Available_openGrid_Depth_Units * 28 : Custom_Grid_Depth * 28 , Custom_Grid_Width == 0 ? Available_openGrid_Width_Units * 28 : Custom_Grid_Width * 28, 6.8]);
                 if(Top_Plate_Customization == "Wireless Charger")
                     cyl(d=Wireless_Charger_Diameter, h=Wireless_Charger_Thickness)
@@ -1804,13 +1804,13 @@ module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, 
             if(Connector_Holes){
                 if(Board_Height > 1)
                 tag("remove")
-                up(Full_or_Lite == "Full" ? Tile_Thickness/2 : Tile_Thickness-connector_cutout_height/2-lite_cutout_distance_from_top)
+                up(Standard_or_Lite == "Standard" ? Tile_Thickness/2 : Tile_Thickness-connector_cutout_height/2-lite_cutout_distance_from_top)
                 xflip_copy(offset = -tileSize*Board_Width/2-0.005)
                     ycopies(spacing=tileSize, l=Board_Height > 2 ? Board_Height*tileSize-tileSize*2 : Board_Height*tileSize - tileSize - 1)
                         connector_cutout_delete_tool(anchor=LEFT);
                 if(Board_Width > 1)
                 tag("remove")
-                up(Full_or_Lite == "Full" ? Tile_Thickness/2 : Tile_Thickness-connector_cutout_height/2-lite_cutout_distance_from_top)
+                up(Standard_or_Lite == "Standard" ? Tile_Thickness/2 : Tile_Thickness-connector_cutout_height/2-lite_cutout_distance_from_top)
                 yflip_copy(offset = -tileSize*Board_Height/2-0.005)
                     xcopies(spacing=tileSize, l=Board_Width > 2 ? Board_Width*tileSize-tileSize*2 : Board_Width*tileSize-tileSize-1)
                         zrot(90)
@@ -1884,7 +1884,7 @@ module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, 
 
         CorderSquareWidth = sqrt(Corner_Square_Thickness^2 + Corner_Square_Thickness^2)+Intersection_Distance;
         
-        full_tile_profile = [
+        standard_tile_profile = [
             [0,0],
             [Outside_Extrusion+insideExtrusion-Inside_Grid_Top_Chamfer,0],
             [Outside_Extrusion+insideExtrusion,Inside_Grid_Top_Chamfer],
@@ -1896,7 +1896,7 @@ module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, 
             [Outside_Extrusion+insideExtrusion-Inside_Grid_Top_Chamfer,Tile_Thickness],
             [0,Tile_Thickness]
             ];
-        full_tile_corners_profile = [
+        standard_tile_corners_profile = [
             [0,0],
             [cornerOffset-cornerChamfer,0],
             [cornerOffset,cornerChamfer],
@@ -1913,13 +1913,13 @@ module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, 
             zrot_copies(n=4)
                 union() {
                     path_extrude2d(path_tile) 
-                        polygon(full_tile_profile);
+                        polygon(standard_tile_profile);
                     move([-tileSize/2,-tileSize/2])
                         rotate([0,0,45])
                             back(cornerOffset)
                                 rotate([90,0,0])
                                     linear_extrude(cornerOffset*2) 
-                                        polygon(full_tile_corners_profile);
+                                        polygon(standard_tile_corners_profile);
                 }
         } 
         cube([tileSize, tileSize, Tile_Thickness], anchor = BOT);
