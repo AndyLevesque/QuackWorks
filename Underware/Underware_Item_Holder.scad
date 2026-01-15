@@ -312,10 +312,11 @@ module basket() {
                 translate([Internal_Width-1,leftLateralCapture,leftLowerCapture])
                     cube([wallThickness+2,Internal_Height-leftLateralCapture*2,Internal_Depth-leftLowerCapture-leftUpperCapture+0.01]);
             if (cordCutout == true) {
-                translate(v = [Internal_Width/2+cordCutoutLateralOffset,Internal_Height/2+cordCutoutDepthOffset,-baseThickness-1]) {
+                translate(v = [Internal_Width / 2 + cordCutoutLateralOffset, Internal_Height/2 + cordCutoutDepthOffset, -baseThickness-1]) {
                     union(){
-                        cylinder(h = baseThickness + frontLowerCapture + 2, r = cordCutoutDiameter/2);
-                        translate(v = [-cordCutoutDiameter/2,0,0]) cube([cordCutoutDiameter,Internal_Width/2+wallThickness+1,baseThickness + frontLowerCapture + 2]);
+                        cylinder(h = baseThickness + frontLowerCapture + 2, r = cordCutoutDiameter / 2);
+                        translate(v = [-cordCutoutDiameter/2,0,0]) 
+                            cube([cordCutoutDiameter, Internal_Height / 2 - cordCutoutDepthOffset + wallThickness + 1, baseThickness + frontLowerCapture + 2]);
                     }
                 }
             }
