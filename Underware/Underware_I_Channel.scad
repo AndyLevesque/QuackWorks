@@ -54,6 +54,7 @@ Wood_Screw_Head_Diameter = 7;
 //Wood Screw Head Height (in mm)
 Wood_Screw_Head_Height = 1.75;
 
+
 /*[Cord Cutouts]*/
 Number_of_Cord_Cutouts = 0;
 //Cutouts on left side, right side, or both (note that it can be flipped so left and right is moot)
@@ -100,6 +101,10 @@ Profile_Type = "Original"; // [Original, v2.5]
 Flex_Compensation_Scaling = 0.99; // 
 //BETA FEATURE - Works with Original Profile Only: Change snap profile for strong holding strength. Not backwards compatible.
 Additional_Holding_Strength = 0.0;//[0:0.1:1.5]
+
+
+// Zip Tie : Enable
+Enable_Zip_Tie = false;
 
 
 /*[Hidden]*/
@@ -164,22 +169,48 @@ color_this(Global_Color)
 module straightChannelBase(lengthMM, widthMM, anchor, spin, orient){
     attachable(anchor, spin, orient, size=[widthMM, lengthMM, baseHeight]){
         fwd(lengthMM/2) down(maxY(selectBaseProfile)/2)
-        diff("holes")
-        zrot(90) path_sweep(baseProfile(widthMM = widthMM), turtle(["xmove", lengthMM]))
-        
-        // Generate mounting holes in a grid pattern across the base
-        // Grid spacing: 25mm (standard grid size)
-        // Grid area: covers entire channel length and width
-        tag("holes") 
-            right(lengthMM/2)  // Center grid on base
-            grid_copies(
-                spacing=Grid_Size,  // 25mm spacing between holes
-                inside=rect([lengthMM-1, Grid_Size*Channel_Width_in_Units-1])  // Constrain to channel bounds
-            ) 
-            generate_mounting_hole();
+        generate_base_with_holes(lengthMM);
         
     children();
     }
+}
+
+module generate_base_with_holes(lengthMM) {
+    diff("holes") {
+        zrot(90) path_sweep(baseProfile(widthMM = channelWidth), turtle(["xmove", lengthMM]))
+        generate_base_holes(lengthMM);
+        generate_base_ziptie_holes(lengthMM);
+    }
+}
+
+module generate_base_holes(lengthMM) {
+    tag("holes") 
+        right(lengthMM/2) 
+        grid_copies(
+            spacing=Grid_Size,
+            inside=rect([lengthMM-1, Grid_Size*Channel_Width_in_Units-1])  
+        ) 
+        generate_mounting_hole();
+}
+
+module generate_base_ziptie_holes(lengthMM) {
+    num_units = lengthMM / Grid_Size;
+
+    if (Enable_Zip_Tie == true && num_units > 1) {
+        for (i = [0 : num_units - 2]) {
+            translate([0, (i + 1) * Grid_Size, 0])
+            generate_ziptie_hole();
+        }
+    }
+}
+
+module generate_ziptie_hole() {   
+    up(4)
+    cuboid([5, 12, 2], rounding=1, edges=[TOP, BOTTOM], anchor=CENTER); 
+
+    tag("holes") 
+        up(1)
+        cuboid([13, 7, 5.5], anchor=CENTER);
 }
 
 module generate_mounting_hole() {
@@ -223,21 +254,15 @@ module generate_magnet_hole() {
 }
 
 module generate_wood_screw_hole() {
-    // Creates a tapered hole for wood screws with two parts:
-    // 1. Thread hole: narrow diameter for the screw shaft
-    // 2. Head countersink: wider tapered hole for the screw head
     
     up(3.5 - Wood_Screw_Head_Height) 
-    // Cylinder for screw thread shaft hole
     cyl(h=3.5 - Wood_Screw_Head_Height+0.05, 
-        d=Wood_Screw_Thread_Diameter,  // Shaft diameter (3.5mm)
+        d=Wood_Screw_Thread_Diameter,  
         $fn=25, anchor=TOP)
     attach(TOP, BOT, overlap=0.01) 
-        // Tapered cylinder for screw head countersink
-        // Tapers from shaft diameter to head diameter
     cyl(h=Wood_Screw_Head_Height+0.05, 
-        d1=Wood_Screw_Thread_Diameter,  // Start diameter (shaft size)
-        d2=Wood_Screw_Head_Diameter,    // End diameter (head size)
+        d1=Wood_Screw_Thread_Diameter,  
+        d2=Wood_Screw_Head_Diameter,    
         $fn=25);
 }
 
