@@ -35,11 +35,11 @@ module openGridSnap(lite=false, directional=false, orient, anchor, spin){
 	}
 
 	w=24.80;
-	fulldiff=3.4;
-	h=lite ? 3.4 : fulldiff*2;
+	standard_diff=3.4;
+	h=lite ? 3.4 : standard_diff*2;
 	attachable(orient=orient, anchor=anchor, spin=spin, size=[w,w,h]){
 		zmove(-h/2) difference(){
-			core=3 + (lite ? 0 : fulldiff);
+			core=3 + (lite ? 0 : standard_diff);
 			top_h=0.4; 
 			top_nub_h=1.1;
 
@@ -55,7 +55,7 @@ module openGridSnap(lite=false, directional=false, orient, anchor, spin){
 					zrot_copies(n=4) move([w/2-offs,w/2-offs,core]) rotate([180, 0, 135]) wedge(size=[6.817,top_nub_h,top_nub_h], anchor=CENTER+BOTTOM);
 				};
 				//bottom nub
-				zmove(lite ? 0 : fulldiff) zrot_copies(n=4)
+				zmove(lite ? 0 : standard_diff) zrot_copies(n=4)
 					if (!directional || ($idx==1 || $idx==3))
 					openGridSnapNub(
 						w=w,
@@ -72,7 +72,7 @@ module openGridSnap(lite=false, directional=false, orient, anchor, spin){
 				//directional nubs 
 				 if (directional) {
 					//front directional nub
-					zmove(lite ? 0 : fulldiff) openGridSnapNub(
+					zmove(lite ? 0 : standard_diff) openGridSnapNub(
 						w=w,
 						nub_h=0,
 						nub_w=14,
@@ -86,7 +86,7 @@ module openGridSnap(lite=false, directional=false, orient, anchor, spin){
 					);
 					 
 					//rear directional nub
-					zrot(180) zmove(lite ? 0 : fulldiff) openGridSnapNub(
+					zrot(180) zmove(lite ? 0 : standard_diff) openGridSnapNub(
 						w=w,
 						nub_h=0.65,
 						nub_w=10.8,
@@ -104,17 +104,17 @@ module openGridSnap(lite=false, directional=false, orient, anchor, spin){
 			zrot_copies(n=4)
 				move([w/2-1, 0, 0])
 				if (!directional || $idx==1 || $idx==3)
-					cuboid([0.6,12.4,2.8 + (lite ? 0 : fulldiff)], rounding=0.3, $fn=100, edges="Z", anchor=BOTTOM);
+					cuboid([0.6,12.4,2.8 + (lite ? 0 : standard_diff)], rounding=0.3, $fn=100, edges="Z", anchor=BOTTOM);
 			//bottom click holes for rear directional
 			if (directional) {
-				zrot(180) move([w/2-1, 0, 0.599]) cuboid([0.6, 12.4, 2.2 + (lite ? 0 : fulldiff) ], rounding=0.3, $fn=100, edges="Z", anchor=BOTTOM);
+				zrot(180) move([w/2-1, 0, 0.599]) cuboid([0.6, 12.4, 2.2 + (lite ? 0 : standard_diff) ], rounding=0.3, $fn=100, edges="Z", anchor=BOTTOM);
 				zrot(180) move([w/2-1.2, 0, 0]) prismoid(size1=[0.6, 12.4], size2=[0.6, 12.4], h=0.6, shift=[0.2,0], rounding=0.3, $fn=100);
 				zrot(180) move([w/2-0.1, 0, 0]) rotate([0,0,0]) prismoid(size1=[0.2, 20], size2=[0, 20], shift=[0.1,0], h=0.6, anchor=BOTTOM);
 			};
 
 			//bottom wall click holes
 			zrot_copies(n=4)
-				move([w/2, 0, 2.2 + (lite ? 0 : fulldiff)])
+				move([w/2, 0, 2.2 + (lite ? 0 : standard_diff)])
 				if (!directional || ($idx>0))
 					cuboid([1.4,12,0.4], anchor=BOTTOM);
 

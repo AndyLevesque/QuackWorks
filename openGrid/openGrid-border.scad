@@ -15,7 +15,7 @@ Change Log:
 include <BOSL2/std.scad>
 
 /*[Border Configuration]*/
-Full_or_Lite = "Lite"; // [Full, Lite]
+Standard_or_Lite = "Lite"; // [Standard, Lite]
 // Length of border in cells
 Border_width = 2;
 // Border thickness (min 5.2mm)
@@ -39,9 +39,9 @@ Tile_Size = 28;
 Connector_Depth = Connector_Protrusion; // How far the cutout goes inward (Z axis)
 Connector_Width = 3.9;                  // Width of connector cutout (match openGrid)
 Connector_Height = 2.0;                 // Height of connector cutout
-Full_Tile_Thickness = 6.8;
+Standard_Tile_Thickness = 6.8;
 Lite_Tile_Thickness = 4;
-Selected_Tile_Thickness = Full_or_Lite == "Full" ? Full_Tile_Thickness : Lite_Tile_Thickness;
+Selected_Tile_Thickness = Standard_or_Lite == "Standard" ? Standard_Tile_Thickness : Lite_Tile_Thickness;
 // Thinner than 5.2mm and the hole for the connector pokes through.
 // TODO: Could we have a connector printed into the part (positive instead of a negative)? Maybe a short connector since it's not weight bearing?
 Selected_Border_Thickness = max(5.2, Border_thickness);
