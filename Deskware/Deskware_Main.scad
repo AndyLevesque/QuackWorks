@@ -39,6 +39,8 @@ Change Log:
 - 2025-11-08 v1.5.1
     - Curve section - Fix HOK connector placement on curved riser (thanks ilg!)
     - Drawers - Fix screw cutout for some custom drawer sizes (thanks ilg!)
+- 2026-02-03 v1.6
+    - Drawer Fronts - New drawer front inset ability for drawer front inlays.
      
 
 Credit to 
@@ -71,12 +73,21 @@ Rounded_Square_Rounding = 50; //[1:1:100]
 /*[Drawers]*/
 //Mounting method of drawer pull (printed vs hardware screws)
 Drawer_Mounting_Method = "Handle - Printed"; //[Screw Holes - Single, Screw Holes - Double, Handle - Printed]
+//Chamfer (mm) of the drawer front
+Drawer_Front_Chamfer = 1;
 //If using screw holes for hardware, enter the diameter (mm) of the screw (5mm is common)
 Drawer_Pull_Screw_Diameter = 5;
 //Distance from screw hole centers if using double-screw drawer pulls
 Drawer_Pull_Double_Screw_Hole_Distance_from_Center = 75;
 //Adjust the height (mm) of the drawer pull holes up(positive) or down (negative)
 Drawer_Pull_Height_Adjustement = 0;
+//Recess the drawer front for an inlay. NOTE: This removes the dovetails due to print orientation. You should expect to glue the drawer front to the drawer box. 
+Drawer_Front_Recess = false;
+//Add a recess (mm) to the front of the drawer to create an inlay.
+Drawer_Front_Recess_Depth= 0.5;
+//If adding a drawer recess, adjust the inset of the recessathena
+Drawer_Front_Recess_Inset = 0.4;
+
 
 /*[Top Plate]*/
 //The depth (mm) of the recess at the top of the top plate. If inserting a material on the top plate, this should match the thickness of that material for a flush top.
@@ -516,9 +527,9 @@ module mw_assembly_view() {
                     xcopies(spacing = Core_Section_Width, n=Core_Section_Count)
                         if($idx == 0)
                         ycopies(spacing = 40)
-                            DrawerFront(height_units = 1, inside_width = Drawer_Outside_Width - DrawerThickness*2);
+                            DrawerFront(height_units = 1, inside_width = Drawer_Outside_Width - DrawerThickness*2, orient= Drawer_Front_Recess ? DOWN : UP);
                         else
-                            DrawerFront(height_units = 2, inside_width = Drawer_Outside_Width - DrawerThickness*2);
+                            DrawerFront(height_units = 2, inside_width = Drawer_Outside_Width - DrawerThickness*2, orient= Drawer_Front_Recess ? DOWN : UP);
                 if(Drawer_Mounting_Method == "Handle - Printed"){
                     fwd(Core_Section_Depth/2 + 25 + 125)
                         DrawerHandle();
@@ -651,7 +662,7 @@ module mw_plate_7(){
 module mw_plate_8(){
     if(!special_render_mode()){
         ydistribute(sizes=[40, 40], spacing = 5){
-            DrawerFront(height_units = 1, inside_width = Drawer_Outside_Width - DrawerThickness*2, anchor=BOT);
+            DrawerFront(height_units = 1, inside_width = Drawer_Outside_Width - DrawerThickness*2, orient= Drawer_Front_Recess ? DOWN : UP, anchor=Drawer_Front_Recess ? TOP : DOWN);
             //DrawerFront(height_units = 2, inside_width = Drawer_Outside_Width - DrawerThickness*2);
             if(Drawer_Mounting_Method == "Handle - Printed"){
                 DrawerHandle(anchor=BOT);
@@ -667,7 +678,7 @@ module mw_plate_9(){
     if(!special_render_mode()){
         ydistribute(sizes=[80, 40], spacing = 5){
             //DrawerFront(height_units = 1, inside_width = Drawer_Outside_Width - DrawerThickness*2);
-            DrawerFront(height_units = 2, inside_width = Drawer_Outside_Width - DrawerThickness*2, anchor=BOT);
+            DrawerFront(height_units = 2, inside_width = Drawer_Outside_Width - DrawerThickness*2, orient= Drawer_Front_Recess ? DOWN : UP, anchor=Drawer_Front_Recess ? TOP : DOWN);
             if(Drawer_Mounting_Method == "Handle - Printed"){
                 DrawerHandle(anchor=BOT);
                 xcopies(spacing = 15)
@@ -770,8 +781,7 @@ module DrawerHandle(handle_OutsideWidth = 100, handle_InsideDepth = 15, handle_T
 
 
 module DrawerFront(height_units, inside_width, anchor=CENTER, orient=UP, spin=0){
-    drawerFrontChamfer = 1;
-    drawerFrontRecess = 3.1;
+    Drawer_Front_Chamfer = 1;
     drawer_height = height_units * Slide_Vertical_Separation - DrawerVerticalClearance;
     drawerFrontHeightReduction = 4.5;
 
@@ -785,8 +795,9 @@ module DrawerFront(height_units, inside_width, anchor=CENTER, orient=UP, spin=0)
     tag_scope()
     recolor(Disable_Colors ? undef : Drawer_Front_Color)
     diff()
-    cuboid([drawerFrontWidth, drawer_height, drawerFrontThickness], chamfer = drawerFrontChamfer, edges=BOT, anchor=anchor, orient=orient, spin=spin){
+    cuboid([drawerFrontWidth, drawer_height, drawerFrontThickness], chamfer = Drawer_Front_Chamfer, edges=BOT, anchor=anchor, orient=orient, spin=spin){
         //drawer dovetails
+        if(!Drawer_Front_Recess)
         xcopies(spacing=inside_width_adjusted - 28 )
         attach(TOP, FRONT, overlap=0.01, align=BACK, inset=drawerFrontHeightReduction)
             cuboid([DrawerDovetailWidth+DrawerThickness*2-clearance*2, DrawerThickness+0.02, DrawerDovetailHeight*height_units - clearance], chamfer=DrawerThickness, edges=[FRONT+LEFT, FRONT+RIGHT]);
@@ -810,6 +821,10 @@ module DrawerFront(height_units, inside_width, anchor=CENTER, orient=UP, spin=0)
                             attach(BOT, TOP, overlap=0.01)
                                 cyl(d=15, h=DrawerThickness, $fn=25);
         }
+        if(Drawer_Front_Recess)
+            tag("remove")
+            attach(BOT, TOP, overlap=Drawer_Front_Recess_Depth)
+                cuboid([drawerFrontWidth - Drawer_Front_Chamfer*2 - Drawer_Front_Recess_Inset*2, drawer_height - Drawer_Front_Chamfer*2 - Drawer_Front_Recess_Inset*2, Drawer_Front_Recess_Depth+0.01]);
         children();
     }
 }
