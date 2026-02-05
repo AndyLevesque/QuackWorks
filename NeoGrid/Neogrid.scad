@@ -24,7 +24,7 @@ include <BOSL2/rounding.scad>
 include <BOSL2/fnliterals.scad>
 
 /*[Part Selection)]*/
-Select_Part = "Straight"; //[Drawer Wall Mounts, Straight, Straight End, X Intersection, T Intersection, L Intersection, Vertical Trim]
+Select_Part = "Straight"; //[Drawer Wall Mounts, Straight, Straight End, X Intersection, T Intersection, L Intersection, Vertical Trim, Label]
 Top_or_Bottom = "Both"; //[Top, Bottom, Both]
 
 /*[Base Options]*/
@@ -56,6 +56,10 @@ Spike_Scale = 1;
 Total_Trim_Width = 42; 
 Middle_Seam_Width = 5;
 Total_Trim_Height = 20;
+
+/*[Label Only]*/
+//Length of the label (in mm)
+Label_Width = 84;
 
 /*[Drawer Wall Screw Mounting]*/
 Screw_Mounting = true;
@@ -250,6 +254,10 @@ if(Select_Part == "Vertical Trim"){
     NeoGrid_Vertical_Trim(Material_Thickness, Wall_Thickness = Wall_Thickness, Total_Trim_Width = Total_Trim_Width, Middle_Seam_Width = Middle_Seam_Width, Total_Trim_Height = Total_Trim_Height);
 }
 
+if(Select_Part == "Label"){
+    NeoGrid_Straight_Thru_Label(Material_Thickness, Channel_Depth = Channel_Depth, Wall_Thickness = Wall_Thickness, grid_size = grid_size, Channel_Length = Label_Width);
+}
+
 /* Display all
 //Straight
 left(part_placement*3){
@@ -363,6 +371,30 @@ module NeoGrid_Straight_Thru_Top(Material_Thickness, Channel_Depth = 20, Wall_Th
         //Removal tool for channel
         attach(TOP, BOT, inside=true, shiftout=0.01)
             channelDeleteTool([Material_Thickness, Channel_Length+0.02, Channel_Depth-Wall_Thickness+0.02]);
+        }
+    }
+}
+
+module NeoGrid_Straight_Thru_Label(Material_Thickness, Channel_Depth = 20, Wall_Thickness = 4, grid_size = 42, Channel_Length = 42, Label_Angle = 30){
+    shift_amount = (Wall_Thickness*2+Material_Thickness) * tan(Label_Angle);
+    diff(){
+        //Channel Walls
+        prismoid(
+            size1=[Channel_Depth, Channel_Length], 
+            size2=[Channel_Depth+shift_amount, Channel_Length],
+            h=Wall_Thickness*2+Material_Thickness,
+            shift=[shift_amount/2,0],
+            orient=LEFT,
+        ){
+            //top chamfer
+            if (Top_Chamfers)
+                edge_profile([TOP+LEFT, BOTTOM+LEFT])
+                    mask2d_chamfer(Wall_Thickness/3);  
+        //Removal tool for channel
+        attach(LEFT, BOTTOM, spin=90, inside=true, shiftout=0.01)
+            channelDeleteTool(size=[Material_Thickness, Channel_Length+0.02, Channel_Depth-Wall_Thickness+0.02], orient=DOWN);
+        attach(TOP-LEFT, TOP, spin=90, shiftout=-Wall_Thickness/6)
+            tag("remove") cube(Channel_Length+0.02);
         }
     }
 }
