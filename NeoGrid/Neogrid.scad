@@ -394,6 +394,7 @@ module NeoGrid_Straight_Thru_Label(Material_Thickness, Channel_Depth = 20, Wall_
         attach(LEFT, BOTTOM, spin=90, inside=true, shiftout=0.01)
             channelDeleteTool(size=[Material_Thickness, Channel_Length+0.02, Channel_Depth-Wall_Thickness+0.02], orient=DOWN);
         attach(TOP-LEFT, TOP, spin=90, shiftout=-Wall_Thickness/6)
+            //sharp corner chamfer
             tag("remove") cube(Channel_Length+0.02);
         }
     }
