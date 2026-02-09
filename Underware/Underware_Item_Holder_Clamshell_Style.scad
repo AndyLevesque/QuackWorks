@@ -41,6 +41,8 @@ Change Log:
 -2025-07-15
     - New Multiconnect v2 option added with improved holding (thanks @dontic on GitHub!)
     - Enabled OnRamp by default
+-2025-09-24
+    - Added Global Color
 
 Notes:
 - Slot test fit - For a slot test fit, set the following parameters
@@ -137,6 +139,9 @@ wallThickness = 2; //.1
 baseThickness = 3; //.1
 
 /*[Advanced]*/
+//Color of part (color names found at https://en.wikipedia.org/wiki/Web_colors)
+Global_Color = "LightGreen";
+
 Backer_Only_Mode = false;
 Backer_Negatives_Only = false; //If true, the backer will be negative space. If false, the backer will be positive space.
 //Set to 0 to use the default thickness of the back. Set to a number to force the back to be that thickness.
@@ -218,6 +223,7 @@ echo(str("Grid spaces apart: ",  mount_point_distance/distanceBetweenSlots));
 
 //move to center
 union(){
+recolor(Global_Color)
 translate(v = [-Internal_Width/2,0,0]) 
     if(!Backer_Only_Mode)
         basket();
@@ -239,8 +245,9 @@ translate(v = [-Internal_Width/2,0,0])
 
 
 if(ClamShell_Mode)
-up(total_item_width+item_slop*2) rot([0,180,0])
+up(total_item_width+item_slop*2) zflip() //rot([0,180,0])
 union(){
+recolor(Global_Color)
 translate(v = [-Internal_Width/2,0,0]) 
     if(!Backer_Only_Mode)
         basket();
@@ -322,6 +329,7 @@ module basket() {
 //BEGIN MODULES
 //Threaded back
 module threadedSnapBack(backWidth, backHeight, distanceBetweenSlots, anchor=BOT, orient=UP, spin=0){
+    recolor(Global_Color)
     diff()
     tag(Backer_Negatives_Only ? "remove" : "")
     cuboid(size = [backWidth, Force_Back_Thickness == 0 ? 3.59 : Force_Back_Thickness, backHeight], rounding=edgeRounding, except_edges=BACK, anchor=anchor, orient=orient, spin=spin){ 
@@ -337,6 +345,7 @@ module multiconnectBack(backWidth, backHeight, distanceBetweenSlots, slotStopFro
 {
     //slot count calculates how many slots can fit on the back. Based on internal width for buffer. 
     //slot width needs to be at least the distance between slot for at least 1 slot to generate
+    recolor(Global_Color)
     let (backWidth = max(backWidth,distanceBetweenSlots), backHeight = max(backHeight, 25),slotCount = floor(backWidth/distanceBetweenSlots), backThickness = Force_Back_Thickness == 0 ? 6.5 : Force_Back_Thickness){
         diff() {
             tag(Backer_Negatives_Only ? "remove" : "")
@@ -362,6 +371,7 @@ module multiconnectBack(backWidth, backHeight, distanceBetweenSlots, slotStopFro
         distanceOffset = onRampHalfOffset ? distanceBetweenSlots / 2 : 0;
 
         scale(v = slotTolerance)
+        color(Global_Color)
         //slot minus optional dimple with optional on-ramp
         let (slotProfile = [[0,0],[10.15,0],[10.15,1.2121],[7.65,3.712],[7.65,5],[0,5]])
         difference() {
