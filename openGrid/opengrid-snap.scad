@@ -104,10 +104,10 @@ module openGridSnap(lite=false, directional=false, orient, anchor, spin){
 			zrot_copies(n=4)
 				move([w/2-1, 0, 0])
 				if (!directional || $idx==1 || $idx==3)
-					cuboid([0.6,12.4,2.8 + (lite ? 0 : fulldiff)], rounding=0.3, $fn=100, edges="Z", anchor=BOTTOM);
+					cuboid([0.6,12.4, lite ? 1.5 : 2.8 + fulldiff], rounding=0.3, $fn=100, edges="Z", anchor=BOTTOM);
 			//bottom click holes for rear directional
 			if (directional) {
-				zrot(180) move([w/2-1, 0, 0.599]) cuboid([0.6, 12.4, 2.2 + (lite ? 0 : fulldiff) ], rounding=0.3, $fn=100, edges="Z", anchor=BOTTOM);
+				zrot(180) move([w/2-1, 0, 0.599]) cuboid([0.6, 12.4, lite ? 0.9 : 2.2 + fulldiff], rounding=0.3, $fn=100, edges="Z", anchor=BOTTOM);
 				zrot(180) move([w/2-1.2, 0, 0]) prismoid(size1=[0.6, 12.4], size2=[0.6, 12.4], h=0.6, shift=[0.2,0], rounding=0.3, $fn=100);
 				zrot(180) move([w/2-0.1, 0, 0]) rotate([0,0,0]) prismoid(size1=[0.2, 20], size2=[0, 20], shift=[0.1,0], h=0.6, anchor=BOTTOM);
 			};
