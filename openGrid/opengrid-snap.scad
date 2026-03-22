@@ -19,7 +19,7 @@ include <BOSL2/std.scad>
 
 module openGridSnap(lite=false, directional=false, orient, anchor, spin){
 	module openGridSnapNub(w, nub_h, nub_w, nub_d, b_y, top_wedge_h, bot_wedge_h, r_x, r_r, r_s){
-		move([w/2, 0, 0])
+		move([w/2 - 0.01, 0, 0])
 		intersection(){
 			difference(){
 				//bounding box - add 0.01 to height for overlap with core
