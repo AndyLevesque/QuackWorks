@@ -50,7 +50,7 @@ Board_Width = 2;
 Board_Height = 2;
 
 /*[Chamfer and Connector Options]*/
-//Cosmetic Chamfers
+//Cosmetic Chamfers - places with screw holes and connector holes will not generate chamfers
 Chamfers = "Corners"; //[Everywhere, Border Only, Non-Border Only, Corners, None]
 Chamfer_Top_Left = true;
 Chamfer_Top_Right = true;
@@ -64,7 +64,7 @@ Connector_Holes_Left = true;
 Connector_Holes_Top = true;
 
 /*[Screw Options]*/
-//Screw holes for mounting -
+//Screw holes for mounting
 Screw_Mounting = "Corners"; //[Everywhere, Corners, By Row and Column, Custom, None]
 Screw_Every_X_Rows = 1;
 Screw_Every_X_Columns = 2;
@@ -143,6 +143,16 @@ function og_chamfer_allowed_at(ix, iy, bw, bh) =
     (ix == 0  && iy == bh) ? Chamfer_Bottom_Left :
     (ix == bw && iy == bh) ? Chamfer_Bottom_Right :
     true;
+
+function og_connector_blocks_chamfer(ix, iy, bw, bh) =
+    (ix == bw && iy > 0 && iy < bh && Connector_Holes_Right) ||
+    (ix == 0  && iy > 0 && iy < bh && Connector_Holes_Left) ||
+    (iy == 0  && ix > 0 && ix < bw && Connector_Holes_Top) ||
+    (iy == bh && ix > 0 && ix < bw && Connector_Holes_Bottom);
+
+function og_chamfer_allowed_by_options(ix, iy, bw, bh) =
+    og_chamfer_allowed_at(ix, iy, bw, bh) &&
+    !og_connector_blocks_chamfer(ix, iy, bw, bh);
 
 if (Fill_Space_Mode == "Complete Tiles Only")
     FillSpaceFullTiles();
@@ -341,14 +351,14 @@ module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, 
                             tag("remove")
                                 up(Full_or_Lite != "Lite" ? Tile_Thickness / 2 : Tile_Thickness - connector_cutout_height / 2 - lite_cutout_distance_from_top) {
                                     //bottom connector holes
-                                    if (Connector_Holes_Right && Chamfers != "Everywhere" && Chamfers != "Border Only")
+                                    if (Connector_Holes_Right)
                                         left(-tileSize * Board_Width / 2 - 0.005)
                                             zrot(180)
                                                 ycopies(spacing=tileSize, l=Board_Height > 2 ? Board_Height * tileSize - tileSize * 2 : Board_Height * tileSize - tileSize - 1)
                                                     connector_cutout_delete_tool(anchor=LEFT);
 
                                     //top connector holes
-                                    if (Connector_Holes_Left && Chamfers != "Everywhere" && Chamfers != "Border Only")
+                                    if (Connector_Holes_Left)
                                         right(-tileSize * Board_Width / 2 - 0.005)
                                             ycopies(spacing=tileSize, l=Board_Height > 2 ? Board_Height * tileSize - tileSize * 2 : Board_Height * tileSize - tileSize - 1)
                                                 connector_cutout_delete_tool(anchor=LEFT);
@@ -359,14 +369,14 @@ module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, 
                             tag("remove")
                                 up(Full_or_Lite != "Lite" ? Tile_Thickness / 2 : Tile_Thickness - connector_cutout_height / 2 - lite_cutout_distance_from_top) {
                                     //right connector holes
-                                    if (Connector_Holes_Top && Chamfers != "Everywhere" && Chamfers != "Border Only")
+                                    if (Connector_Holes_Top)
                                         fwd(-tileSize * Board_Height / 2 - 0.005)
                                             xcopies(spacing=tileSize, l=Board_Width > 2 ? Board_Width * tileSize - tileSize * 2 : Board_Width * tileSize - tileSize - 1)
                                                 zrot(-90)
                                                     connector_cutout_delete_tool(anchor=LEFT);
 
                                     //left connector holes
-                                    if (Connector_Holes_Bottom && Chamfers != "Everywhere" && Chamfers != "Border Only")
+                                    if (Connector_Holes_Bottom)
                                         back(-tileSize * Board_Height / 2 - 0.005)
                                             xcopies(spacing=tileSize, l=Board_Width > 2 ? Board_Width * tileSize - tileSize * 2 : Board_Width * tileSize - tileSize - 1)
                                                 zrot(90)
@@ -556,7 +566,7 @@ module applyTileCornerModifications(Board_Width, Board_Height, tileSize = 28, Ti
                 for (ix = [0:Board_Width], iy = [0:Board_Height])
                     let(
                         p = og_node_pos(ix, iy, Board_Width, Board_Height, tileSize),
-                        chamfer_allowed = og_chamfer_allowed_at(ix, iy, Board_Width, Board_Height)
+                        chamfer_allowed = og_chamfer_allowed_by_options(ix, iy, Board_Width, Board_Height)
                     )
                     if (chamfer_allowed && !og_point_in_list(p, screwPositions))
                         p
@@ -570,7 +580,7 @@ module applyTileCornerModifications(Board_Width, Board_Height, tileSize = 28, Ti
                     let(
                         p = og_node_pos(ix, iy, Board_Width, Board_Height, tileSize),
                         is_border = ix == 0 || ix == Board_Width || iy == 0 || iy == Board_Height,
-                        chamfer_allowed = og_chamfer_allowed_at(ix, iy, Board_Width, Board_Height)
+                        chamfer_allowed = og_chamfer_allowed_by_options(ix, iy, Board_Width, Board_Height)
                     )
                     if (is_border && chamfer_allowed && !og_point_in_list(p, screwPositions))
                         p
@@ -584,7 +594,7 @@ module applyTileCornerModifications(Board_Width, Board_Height, tileSize = 28, Ti
                     let(
                         p = og_node_pos(ix, iy, Board_Width, Board_Height, tileSize),
                         is_border = ix == 0 || ix == Board_Width || iy == 0 || iy == Board_Height,
-                        chamfer_allowed = og_chamfer_allowed_at(ix, iy, Board_Width, Board_Height)
+                        chamfer_allowed = og_chamfer_allowed_by_options(ix, iy, Board_Width, Board_Height)
                     )
                     if (!is_border && chamfer_allowed && !og_point_in_list(p, screwPositions))
                         p
