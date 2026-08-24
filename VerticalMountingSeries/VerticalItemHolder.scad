@@ -32,6 +32,8 @@ Change Log:
     - Added rounding for top cutout
 -2025-07-15
     - New Multiconnect v2 option added with improved holding (thanks @dontic on GitHub!)
+- 2026-03-17
+    - Added optional front-face round pocket for circular items
 
 Notes:
 - Slot test fit - For a slot test fit, set the following parameters
@@ -72,6 +74,16 @@ frontLowerCapture = 7;
 frontUpperCapture = 0;
 //Distance inward from the sides (in mm) that captures the sides of the item
 frontLateralCapture = 3;
+
+/* [Front Round Pocket] */
+//Add a round pocket in the front face for circular items
+frontRoundPocket = false;
+//Diameter (in mm) of the round item
+frontRoundPocketDiameter = 30;
+//Height (in mm) of the round pocket center above the internal floor
+frontRoundPocketCenterHeight = 25;
+//Move the round pocket left (negative) or right (positive) from center (in mm)
+frontRoundPocketLateralOffset = 0;
 
 
 /*[Bottom Cutout Customizations]*/
@@ -184,6 +196,9 @@ totalHeight = !backPlateOnly ? internalHeight+baseThickness : internalHeight;
 totalDepth = !backPlateOnly ? internalDepth + wallThickness : internalDepth;
 totalWidth = !backPlateOnly ? internalWidth + wallThickness*2 : internalWidth;
 totalCenterX = internalWidth/2;
+frontRoundPocketOuterRadius = frontRoundPocketDiameter/2 + wallThickness;
+adjustedFrontRoundPocketCenterHeight = max(frontRoundPocketCenterHeight, frontRoundPocketOuterRadius);
+frontRoundPocketCutoutCenterHeight = internalWidth/2;
 
 if(!debugCutoutTool)
 union(){
@@ -248,7 +263,7 @@ module basket() {
         }
 
         //frontCaptureDeleteTool for item holders
-            if (frontCutout == true)
+            if (frontCutout == true && frontRoundPocket == false)
                 translate([frontLateralCapture,internalDepth-1,frontLowerCapture])
                     cuboid([internalWidth-frontLateralCapture*2,wallThickness+2,internalHeight-frontLowerCapture-frontUpperCapture+0.01], rounding=-3, edges = [TOP+LEFT, TOP+RIGHT], anchor=BOT+FRONT+LEFT, $fn = 25);
             if (bottomCutout == true)
@@ -268,6 +283,11 @@ module basket() {
                         translate(v = [-cordCutoutDiameter/2,0,0]) cube([cordCutoutDiameter,internalWidth/2+wallThickness+1,baseThickness + frontLowerCapture + 2]);
                     }
                 }
+            }
+            if (frontRoundPocket == true && frontCutout == false) {
+                frontRoundPocketUpperClearanceCutout();
+                frontRoundPocketCutout();
+                frontRoundPocketTopTrimCutout();
             }
     }
     
@@ -532,4 +552,58 @@ module yMultipointSlotDimples(z, slotBaseRadius, distanceBetweenSlots, distanceO
         translate(v = [0,0,((-z+.5)*distanceBetweenSlots)+distanceOffset])
            cube([3,3,10], center=true);
     }
-}   
+}
+
+module frontRoundPocketCutout() {
+    intersection() {
+        translate([
+            totalCenterX + frontRoundPocketLateralOffset,
+            internalDepth + wallThickness/2,
+            frontRoundPocketCutoutCenterHeight
+        ])
+            rotate([90,0,0])
+                cylinder(
+                    h = wallThickness + 2,
+                    d = frontRoundPocketDiameter,
+                    center = true,
+                    $fn = 96
+                );
+
+        translate([
+            totalCenterX + frontRoundPocketLateralOffset - frontRoundPocketDiameter/2 - 1,
+            internalDepth - 1,
+            frontRoundPocketCutoutCenterHeight - frontRoundPocketDiameter/2 - 1
+        ])
+            cube([
+                frontRoundPocketDiameter + 2,
+                wallThickness + 2,
+                frontRoundPocketDiameter/2 + 1
+            ]);
+    }
+}
+
+module frontRoundPocketUpperClearanceCutout() {
+    translate([
+        totalCenterX + frontRoundPocketLateralOffset - frontRoundPocketDiameter/2,
+        internalDepth - wallThickness/2,
+        frontRoundPocketCutoutCenterHeight-1
+    ])
+        cube([
+            frontRoundPocketDiameter,
+            wallThickness*2,
+            max(0, internalHeight - frontRoundPocketCutoutCenterHeight + 1)
+        ]);
+}
+
+module frontRoundPocketTopTrimCutout() {
+    translate([
+        totalCenterX + frontRoundPocketLateralOffset - frontRoundPocketDiameter/2,
+        internalDepth - wallThickness/2,
+        internalHeight
+    ])
+        cube([
+            frontRoundPocketDiameter,
+            wallThickness*2,
+            frontRoundPocketDiameter/2 + wallThickness +1
+        ]);
+}
