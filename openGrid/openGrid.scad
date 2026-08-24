@@ -31,6 +31,8 @@ Change Log:
       - Like 2 openGrids back to back for rigidity in freestanding / side hung installations and double sided use
       - Original Heavy design by @KYZ Design on Makerworld https://makerworld.com/en/@KYZDesign
       - Implementation by sfcgeorge
+- 2026-03-19
+    - Add square cutouts to openGrid
 
 
 
@@ -107,6 +109,14 @@ Space_Depth = 500;
 Max_Tile_Width = 8;
 Max_Tile_Depth = 8;
 Tile_Spacing = 5;
+
+/*[Beta - Square Cutout]*/
+//Removes a rectangular section of full grid squares. Coordinates are zero-based from the top-left tile.
+Enable_Square_Cutout = false;
+Square_Cutout_Start_X = 0;
+Square_Cutout_Start_Y = 0;
+Square_Cutout_Width = 1;
+Square_Cutout_Length = 1;
 
 adjustedStackCount = Add_Adhesive_Base ? 1 : Stack_Count;
 adjustedInterfaceThickness =
@@ -297,6 +307,7 @@ module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, 
 
                     //TODO: Modularize positioning (Outside Corners, inside corners, inside all) and holes (chamfer and screw holes)
                     applyTileCornerModifications(Board_Width, Board_Height, tileSize, Tile_Thickness, Screw_Mounting, Chamfers, anchor);
+                    applySquareCutoutModifications(Board_Width, Board_Height, tileSize, Tile_Thickness);
 
                     if (Connector_Holes) {
                         //top and bottom connector holes
@@ -456,6 +467,22 @@ module openGrid(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, 
             cube([tileSize, tileSize, Tile_Thickness], anchor=BOT);
         }
     }
+}
+
+module applySquareCutoutModifications(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8) {
+    cutout_start_x = max(0, Square_Cutout_Start_X);
+    cutout_start_y = max(0, Square_Cutout_Start_Y);
+    cutout_width = min(max(0, Square_Cutout_Width), max(0, Board_Width - cutout_start_x));
+    cutout_length = min(max(0, Square_Cutout_Length), max(0, Board_Height - cutout_start_y));
+
+    if (Enable_Square_Cutout && cutout_width > 0 && cutout_length > 0)
+        tag("remove")
+            translate([
+                -Board_Width * tileSize / 2 + (cutout_start_x + cutout_width / 2) * tileSize,
+                Board_Height * tileSize / 2 - (cutout_start_y + cutout_length / 2) * tileSize,
+                Tile_Thickness / 2
+            ])
+                cuboid([cutout_width * tileSize, cutout_length * tileSize, Tile_Thickness + 0.02], anchor=CENTER);
 }
 
 module applyTileCornerModifications(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, Screw_Mounting = "None", Chamfers = "None", anchor = CENTER) {
