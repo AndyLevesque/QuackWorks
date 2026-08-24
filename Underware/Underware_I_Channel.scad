@@ -54,6 +54,7 @@ Wood_Screw_Head_Diameter = 7;
 //Wood Screw Head Height (in mm)
 Wood_Screw_Head_Height = 1.75;
 
+
 /*[Cord Cutouts]*/
 Number_of_Cord_Cutouts = 0;
 //Cutouts on left side, right side, or both (note that it can be flipped so left and right is moot)
@@ -100,6 +101,10 @@ Profile_Type = "Original"; // [Original, v2.5]
 Flex_Compensation_Scaling = 0.99; // 
 //BETA FEATURE - Works with Original Profile Only: Change snap profile for strong holding strength. Not backwards compatible.
 Additional_Holding_Strength = 0.0;//[0:0.1:1.5]
+
+
+// Zip Tie : Enable
+Enable_Zip_Tie = false;
 
 
 /*[Hidden]*/
@@ -164,20 +169,110 @@ color_this(Global_Color)
 module straightChannelBase(lengthMM, widthMM, anchor, spin, orient){
     attachable(anchor, spin, orient, size=[widthMM, lengthMM, baseHeight]){
         fwd(lengthMM/2) down(maxY(selectBaseProfile)/2)
-        diff("holes")
-        zrot(90) path_sweep(baseProfile(widthMM = widthMM), turtle(["xmove", lengthMM]))
-        tag("holes")  right(lengthMM/2) grid_copies(spacing=Grid_Size, inside=rect([lengthMM-1,Grid_Size*Channel_Width_in_Units-1])) 
-            if(Mounting_Method == "Direct Multiboard Screw") up(Base_Screw_Hole_Inner_Depth) cyl(h=8, d=Base_Screw_Hole_Inner_Diameter, $fn=25, anchor=TOP) attach(TOP, BOT, overlap=0.01) cyl(h=3.5-Base_Screw_Hole_Inner_Depth+0.02, d1=Base_Screw_Hole_Cone ? Base_Screw_Hole_Inner_Diameter : Base_Screw_Hole_Outer_Diameter, d2=Base_Screw_Hole_Outer_Diameter, $fn=25);
-            else if(Mounting_Method == "Direct Multipoint Screw") up(Base_Screw_Hole_Inner_Depth) cyl(h=8, d=Base_Screw_Hole_Inner_Diameter, $fn=25, anchor=TOP) attach(TOP, BOT, overlap=0.01) cyl(h=3.5-Base_Screw_Hole_Inner_Depth+0.02, d1=Base_Screw_Hole_Cone ? Base_Screw_Hole_Inner_Diameter : MultipointBase_Screw_Hole_Outer_Diameter, d2=MultipointBase_Screw_Hole_Outer_Diameter, $fn=25);
-            else if(Mounting_Method == "Magnet") up(Magnet_Thickness+Magnet_Tolerance-0.01) cyl(h=Magnet_Thickness+Magnet_Tolerance, d=Magnet_Diameter+Magnet_Tolerance, $fn=50, anchor=TOP);
-            else if(Mounting_Method == "Wood Screw") up(3.5 - Wood_Screw_Head_Height) cyl(h=3.5 - Wood_Screw_Head_Height+0.05, d=Wood_Screw_Thread_Diameter, $fn=25, anchor=TOP)
-                //wood screw head
-                attach(TOP, BOT, overlap=0.01) cyl(h=Wood_Screw_Head_Height+0.05, d1=Wood_Screw_Thread_Diameter, d2=Wood_Screw_Head_Diameter, $fn=25);
-            else if(Mounting_Method == "Flat") ; //do nothing
-            //Default is Threaded Snap Connector
-            else up(5.99) trapezoidal_threaded_rod(d=Outer_Diameter_Sm, l=6, pitch=Pitch_Sm, flank_angle = Flank_Angle_Sm, thread_depth = Thread_Depth_Sm, $fn=50, internal=true, bevel2 = true, blunt_start=false, anchor=TOP, $slop=Slop);
+        generate_base_with_holes(lengthMM);
+        
     children();
     }
+}
+
+module generate_base_with_holes(lengthMM) {
+    diff("holes") {
+        zrot(90) path_sweep(baseProfile(widthMM = channelWidth), turtle(["xmove", lengthMM]))
+        generate_base_holes(lengthMM);
+        generate_base_ziptie_holes(lengthMM);
+    }
+}
+
+module generate_base_holes(lengthMM) {
+    tag("holes") 
+        right(lengthMM/2) 
+        grid_copies(
+            spacing=Grid_Size,
+            inside=rect([lengthMM-1, Grid_Size*Channel_Width_in_Units-1])  
+        ) 
+        generate_mounting_hole();
+}
+
+module generate_base_ziptie_holes(lengthMM) {
+    num_units = lengthMM / Grid_Size;
+
+    if (Enable_Zip_Tie == true && num_units > 1) {
+        for (i = [0 : num_units - 2]) {
+            translate([0, (i + 1) * Grid_Size, 0])
+            generate_ziptie_hole();
+        }
+    }
+}
+
+module generate_ziptie_hole() {   
+    up(4)
+    cuboid([5, 12, 2], rounding=1, edges=[TOP, BOTTOM], anchor=CENTER); 
+
+    tag("holes") 
+        up(1)
+        cuboid([13, 7, 5.5], anchor=CENTER);
+}
+
+module generate_mounting_hole() {
+    if(Mounting_Method == "Direct Multiboard Screw") 
+        generate_multiboard_screw_hole();
+    else if(Mounting_Method == "Direct Multipoint Screw") 
+        generate_multipoint_screw_hole();
+    else if(Mounting_Method == "Magnet") 
+        generate_magnet_hole();
+    else if(Mounting_Method == "Wood Screw") 
+        generate_wood_screw_hole();
+    else if(Mounting_Method == "Flat") 
+        ; //do nothing
+    //Default is Threaded Snap Connector
+    else 
+        generate_snap_connector_hole();
+}
+
+module generate_multiboard_screw_hole() {
+    up(Base_Screw_Hole_Inner_Depth) 
+        cyl(h=8, d=Base_Screw_Hole_Inner_Diameter, $fn=25, anchor=TOP) 
+        attach(TOP, BOT, overlap=0.01) 
+            cyl(h=3.5-Base_Screw_Hole_Inner_Depth+0.02, 
+                d1=Base_Screw_Hole_Cone ? Base_Screw_Hole_Inner_Diameter : Base_Screw_Hole_Outer_Diameter, 
+                d2=Base_Screw_Hole_Outer_Diameter, $fn=25);
+}
+
+module generate_multipoint_screw_hole() {
+    up(Base_Screw_Hole_Inner_Depth) 
+        cyl(h=8, d=Base_Screw_Hole_Inner_Diameter, $fn=25, anchor=TOP) 
+        attach(TOP, BOT, overlap=0.01) 
+            cyl(h=3.5-Base_Screw_Hole_Inner_Depth+0.02, 
+                d1=Base_Screw_Hole_Cone ? Base_Screw_Hole_Inner_Diameter : MultipointBase_Screw_Hole_Outer_Diameter, 
+                d2=MultipointBase_Screw_Hole_Outer_Diameter, $fn=25);
+}
+
+module generate_magnet_hole() {
+    up(Magnet_Thickness+Magnet_Tolerance-0.01) 
+        cyl(h=Magnet_Thickness+Magnet_Tolerance, 
+            d=Magnet_Diameter+Magnet_Tolerance, $fn=50, anchor=TOP);
+}
+
+module generate_wood_screw_hole() {
+    
+    up(3.5 - Wood_Screw_Head_Height) 
+    cyl(h=3.5 - Wood_Screw_Head_Height+0.05, 
+        d=Wood_Screw_Thread_Diameter,  
+        $fn=25, anchor=TOP)
+    attach(TOP, BOT, overlap=0.01) 
+    cyl(h=Wood_Screw_Head_Height+0.05, 
+        d1=Wood_Screw_Thread_Diameter,  
+        d2=Wood_Screw_Head_Diameter,    
+        $fn=25);
+}
+
+module generate_snap_connector_hole() {
+    up(5.99) 
+        trapezoidal_threaded_rod(
+            d=Outer_Diameter_Sm, l=6, pitch=Pitch_Sm, 
+            flank_angle=Flank_Angle_Sm, thread_depth=Thread_Depth_Sm, 
+            $fn=50, internal=true, bevel2=true, blunt_start=false, 
+            anchor=TOP, $slop=Slop);
 }
 
 module straightChannelTop(lengthMM, widthMM, heightMM = 12, anchor, spin, orient){
