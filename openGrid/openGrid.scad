@@ -31,6 +31,12 @@ Change Log:
       - Like 2 openGrids back to back for rigidity in freestanding / side hung installations and double sided use
       - Original Heavy design by @KYZ Design on Makerworld https://makerworld.com/en/@KYZDesign
       - Implementation by sfcgeorge
+- Unreleased
+    - Interface layer now matches the faces it is sandwiched between
+      - Full: the interface is the intersection of both mating faces, so it no longer overhangs into
+        the screw head counterbores of the plate above
+      - Heavy: the interface uses the openGrid top face on both sides, instead of alternating with a
+        Lite cut-face profile on every other layer
 
 
 
@@ -146,14 +152,45 @@ if (Fill_Space_Mode == "None") {
             openGridHeavy(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, Connector_Holes=Connector_Holes, anchor=$idx % 2 == 0 ? TOP : BOT, orient=$idx % 2 == 0 ? UP : DOWN);
         if (Stacking_Method == "Interface Layer")
             zcopies(spacing=Heavy_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=adjustedStackCount - 1, sp=[0, 0, Heavy_Tile_Thickness + Interface_Separation])
-                color("red") interfaceLayer2D(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, boardType="Lite", topSide=$idx % 2 == 0 ? false : true);
+                //openGridHeavy is built from a 6.8mm openGrid regardless of Heavy_Tile_Thickness
+                color("red") interfaceLayer(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Tile_Thickness=6.8, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, boardType="Heavy");
     }
 }
 
+//Full stacks are all zflipped, so the interface is sandwiched between a tile's original bottom face
+//(the plate below) and its original top face (the plate above). The Full tile profile is symmetric,
+//so those two sections differ only where screws are counterbored - taking the intersection keeps the
+//interface out of the screw head recesses while still covering every spot where the two plates would
+//otherwise touch.
+//Heavy tiles are symmetric as a whole, but each half uses an asymmetric profile: both faces meeting
+//an interface are an openGrid TOP face, so only that section is used.
+//Note projection(cut=true) returns the material just above the cut plane, hence the 0.01 offset when
+//sampling a top face. That is the same 0.01 the Lite path uses, and it is well under one extrusion.
 module interfaceLayer(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, Screw_Mounting = "None", Chamfers = "None", Connector_Holes = false, anchor = CENTER, spin = 0, orient = UP, boardType = "Full") {
     linear_extrude(height=Interface_Thickness)
-        projection(cut=true)
-            interfaceLayer2D(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=tileSize, Tile_Thickness=Tile_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, boardType=boardType);
+        if (boardType == "Heavy") {
+            fullTileSection(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=tileSize, Tile_Thickness=Tile_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, sectionZ=Tile_Thickness - 0.01);
+        } else {
+            intersection() {
+                fullTileSection(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=tileSize, Tile_Thickness=Tile_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, sectionZ=0);
+                fullTileSection(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=tileSize, Tile_Thickness=Tile_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, sectionZ=Tile_Thickness - 0.01);
+            }
+        }
+}
+
+//2D cross section of a Full tile at height sectionZ, in openGrid's own frame (anchor=BOT)
+module fullTileSection(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, Screw_Mounting = "None", Chamfers = "None", sectionZ = 0) {
+    projection(cut=true)
+        down(sectionZ)
+            openGrid(
+                Board_Width=Board_Width,
+                Board_Height=Board_Height,
+                tileSize=tileSize,
+                Tile_Thickness=Tile_Thickness,
+                Screw_Mounting=Screw_Mounting,
+                Chamfers=Chamfers,
+                anchor=BOT
+            );
 }
 
 module interfaceLayer2D(Board_Width, Board_Height, tileSize = 28, Tile_Thickness = 6.8, Screw_Mounting = "None", Chamfers = "None", Connector_Holes = false, anchor = CENTER, spin = 0, orient = UP, boardType = "Full", topSide = false) {
