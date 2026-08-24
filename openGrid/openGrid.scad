@@ -31,7 +31,39 @@ Change Log:
       - Like 2 openGrids back to back for rigidity in freestanding / side hung installations and double sided use
       - Original Heavy design by @KYZ Design on Makerworld https://makerworld.com/en/@KYZDesign
       - Implementation by sfcgeorge
+- Unreleased
+    - New Stack_Output option, so the plates and the interface layers can be exported separately and
+      stay assignable to different filaments when Interface Separation is 0
 
+
+
+Multi-material stacking - getting the interface onto its own filament:
+
+    Interface Separation is what decides whether this is a problem at all.
+
+    - Interface Separation above 0: nothing to do. The plates and the interface layers are already
+      separate bodies, and any slicer can split them apart and assign filaments.
+
+    - Interface Separation of 0: the plates and the interface layers share coplanar faces, so
+      OpenSCAD's implicit top-level union welds the whole stack into a single solid. color() is
+      preview-only and does not survive that. A slicer then sees one body and there is nothing to put
+      a second filament on. Two ways out:
+
+        a) Desktop OpenSCAD, 3MF export, "lazy-union" enabled in Preferences > Advanced > Features:
+           you get two objects (all the plates, and all the interface layers) with no extra steps.
+           Leave Stack_Output on All.
+
+        b) Everything else - STL export, 3MF without lazy-union, and the MakerWorld customizer, which
+           always outputs a single welded part: generate twice, once with Stack_Output = "Plates
+           Only" and once with "Interface Layers Only". Then select BOTH files together in the
+           slicer's import dialog and answer yes to "load as a single object with multiple parts";
+           that is what preserves their absolute Z positions. Loading the interface file on its own
+           would drop it onto the bed.
+
+    One slicer setting matters either way: because the parts touch, the slicer sees no free surface
+    between them and keeps extruding infill straight through. Enable "interface shells" (Print
+    Settings > Multimaterial > Advanced in OrcaSlicer 2.3+) to force solid shells between adjacent
+    materials.
 
 
 Credit to 
@@ -99,6 +131,8 @@ Stacking_Method = "Interface Layer"; //[Interface Layer, Ironing - BETA]
 Interface_Thickness = 0.4;
 //Distance between the interface and the tile. This is the distance between the top of the tile and the bottom of the interface. Try to use a multiple of the layer height when combined with the interface thickness.
 Interface_Separation = 0.1;
+//Multi-material stacking. Only matters when Interface Separation is 0: the plates and the interface layers then touch, OpenSCAD welds the whole stack into a single body, and no slicer can put a different filament on the interface. In that case generate twice - once with "Plates Only", once with "Interface Layers Only" - and load both files together in the slicer as one object with several parts. That is also the only route from the MakerWorld customizer, which always outputs a single welded part. Leave this on "All" if Interface Separation is above 0 (the bodies are already separate), or if you export 3MF from desktop OpenSCAD with lazy-union enabled (you already get two objects). See the notes at the top of this file.
+Stack_Output = "All"; //[All, Plates Only, Interface Layers Only]
 
 /*[Beta - Fill Space]*/
 Fill_Space_Mode = "None"; //[None, Complete Tiles Only, Fill Available Space]
@@ -125,26 +159,29 @@ if (Fill_Space_Mode == "None") {
 
     //GENERATE STACKED TILES
     if (Full_or_Lite == "Full" && adjustedStackCount > 1) {
-        zcopies(spacing=Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=adjustedStackCount, sp=[0, 0, Tile_Thickness])
-            zflip()
-                openGrid(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Tile_Thickness=Tile_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, anchor=BOT, Connector_Holes=Connector_Holes);
-        if (Stacking_Method == "Interface Layer")
+        if (Stack_Output != "Interface Layers Only")
+            zcopies(spacing=Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=adjustedStackCount, sp=[0, 0, Tile_Thickness])
+                zflip()
+                    openGrid(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Tile_Thickness=Tile_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, anchor=BOT, Connector_Holes=Connector_Holes);
+        if (Stacking_Method == "Interface Layer" && Stack_Output != "Plates Only")
             zcopies(spacing=Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=adjustedStackCount - 1, sp=[0, 0, Tile_Thickness + Interface_Separation])
                 color("red") interfaceLayer(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Tile_Thickness=Tile_Thickness, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, boardType="Full", anchor=BOT);
     }
 
     if (Full_or_Lite == "Lite" && adjustedStackCount > 1) {
-        zcopies(spacing=Lite_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=adjustedStackCount, sp=[0, 0, Lite_Tile_Thickness])
-            openGridLite(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, Connector_Holes=Connector_Holes, anchor=$idx % 2 == 0 ? TOP : BOT, orient=$idx % 2 == 0 ? UP : DOWN);
-        if (Stacking_Method == "Interface Layer")
+        if (Stack_Output != "Interface Layers Only")
+            zcopies(spacing=Lite_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=adjustedStackCount, sp=[0, 0, Lite_Tile_Thickness])
+                openGridLite(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, Connector_Holes=Connector_Holes, anchor=$idx % 2 == 0 ? TOP : BOT, orient=$idx % 2 == 0 ? UP : DOWN);
+        if (Stacking_Method == "Interface Layer" && Stack_Output != "Plates Only")
             zcopies(spacing=Lite_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=adjustedStackCount - 1, sp=[0, 0, Lite_Tile_Thickness + Interface_Separation])
                 color("red") interfaceLayer2D(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, boardType="Lite", topSide=$idx % 2 == 0 ? false : true);
     }
 
     if (Full_or_Lite == "Heavy" && adjustedStackCount > 1) {
-        zcopies(spacing=Heavy_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=adjustedStackCount, sp=[0, 0, Heavy_Tile_Thickness])
-            openGridHeavy(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, Connector_Holes=Connector_Holes, anchor=$idx % 2 == 0 ? TOP : BOT, orient=$idx % 2 == 0 ? UP : DOWN);
-        if (Stacking_Method == "Interface Layer")
+        if (Stack_Output != "Interface Layers Only")
+            zcopies(spacing=Heavy_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=adjustedStackCount, sp=[0, 0, Heavy_Tile_Thickness])
+                openGridHeavy(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, Connector_Holes=Connector_Holes, anchor=$idx % 2 == 0 ? TOP : BOT, orient=$idx % 2 == 0 ? UP : DOWN);
+        if (Stacking_Method == "Interface Layer" && Stack_Output != "Plates Only")
             zcopies(spacing=Heavy_Tile_Thickness + adjustedInterfaceThickness + 2 * Interface_Separation, n=adjustedStackCount - 1, sp=[0, 0, Heavy_Tile_Thickness + Interface_Separation])
                 color("red") interfaceLayer2D(Board_Width=Board_Width, Board_Height=Board_Height, tileSize=Tile_Size, Screw_Mounting=Screw_Mounting, Chamfers=Chamfers, boardType="Lite", topSide=$idx % 2 == 0 ? false : true);
     }
