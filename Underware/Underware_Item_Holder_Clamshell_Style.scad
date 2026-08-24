@@ -310,7 +310,7 @@ module basket() {
                 translate(v = [Internal_Width/2+cordCutoutLateralOffset,Internal_Height/2+cordCutoutDepthOffset,-baseThickness-1]) {
                     union(){
                         cylinder(h = baseThickness + frontLowerCapture + 2, r = cordCutoutDiameter/2);
-                        translate(v = [-cordCutoutDiameter/2,0,0]) cube([cordCutoutDiameter,Internal_Width/2+wallThickness+1,baseThickness + frontLowerCapture + 2]);
+                        translate(v = [-cordCutoutDiameter/2,0,0]) cube([cordCutoutDiameter,Internal_Width/2+wallThickness-cordCutoutDepthOffset+1,baseThickness + frontLowerCapture + 2]);
                     }
                 }
             }
