@@ -43,6 +43,52 @@ Change Log:
     - Enabled OnRamp by default
 -2025-07-25
     - Added ability to subtract slots if wanting few slots than generated
+-2026-08-30
+    - Refactored the whole model into the mounted frame of reference (see below).
+      Print orientation is applied only on render/export, via Print_Orientation.
+    - Cutout groups renamed to match the mounted faces they actually cut
+      (old "front" is now "bottom", old "bottom" is now "back").
+    - Left/right are now from the user's point of view at the open front face,
+      so the right wall is at -X.
+    - Added Print_Orientation, which rotates the model onto its printing
+      orientation for render and export while leaving the preview mounted.
+    - ClamShell_Mode now orients each half separately so both lie plate-down on
+      the bed, packs them together with Print_Part_Spacing, and emits them as
+      two separate top level objects.
+
+Frame of reference:
+    The model is drawn as it is mounted, not as it is printed. The mounting
+    surface is horizontal and above the part (for example the underside of a
+    desk), so the connectors sit on TOP and the holder hangs below them.
+
+        -X = right, +X = left        -> Internal_Width
+        -Y = back,  +Y = front       -> Internal_Depth  (front face is open)
+        +Z = up,    -Z = down        -> Internal_Height (hangs downward)
+
+    "Back" and "front" are named relative to the mounting surface, following the
+    original model's usage: the back wall is the one against the board, and the
+    front is the open face you load the item through. The item extends in +Y so
+    it sits in front of you as you face the mount.
+
+    "Left" and "right" are from your point of view as the user standing at the
+    open front face. Because you look in the -Y direction, your right hand points
+    toward -X, so the right wall is the one at -X.
+
+    The origin is at the centre of the front edge of the mounting plane: the
+    connector plate occupies z > 0 and the holder occupies z < 0, y > 0.
+
+    Orienting the part for printing is handled by the Print_Orientation
+    parameter, applied only in printOrient() at the top level. The preview (F5)
+    always stays in the frame above; a render (F6) or an export rotates the
+    model +90 degrees about X to lay the connector plate flat on the bed.
+    Everything else in this file is written in the mounted frame.
+
+    In ClamShell_Mode the two halves face opposite ways, so they are oriented
+    separately: each rotates about X in the direction that brings its own
+    mounted back face down, and the partner is then packed alongside the first
+    half with Print_Part_Spacing between them. Each half is a separate top level
+    object, so exporting with --enable=lazy-union to a format that supports
+    multiple objects (3MF does, STL does not) keeps them as two parts.
 
 Notes:
 - Slot test fit - For a slot test fit, set the following parameters
@@ -62,66 +108,66 @@ Mounting_Style = "Multiconnect"; //[Multiconnect, Threaded Snap]
 Mounting_Surface = "Multiboard"; //[Multiboard, openGrid, Custom]
 
 /* [Internal Dimensions] */
-//Depth (by mm): internal dimension along the Z axis of print orientation. Measured from the top to the base of the internal floor, equivalent to the depth of the item you wish to hold when mounted horizontally.
-Internal_Depth = 50.0; //.1
-//Width (by mm): internal dimension along the X axis of print orientation. Measured from left to right, equivalent to the width of the item you wish to hold when mounted horizontally.
+//Width (by mm): internal dimension along the X axis, measured left to right as mounted.
 Internal_Width = 60.0; //.1
-//Height (by mm): internal dimension along the Y axis of print orientation. Measured from the front to the back, equivalent to the thickness of the item you wish to hold when mounted horizontally.
+//Depth (by mm): internal dimension along the Y axis, measured front to back as mounted. The front face is the open side you load the item through.
+Internal_Depth = 50.0; //.1
+//Height (by mm): internal dimension along the Z axis, measured from the mounting surface straight down to the inside of the bottom wall.
 Internal_Height = 15.0; //.1
 
 /*[Style Customizations]*/
 //Edge rounding (by mm)
 edgeRounding = 0.5; // [0:0.1:2]
 
-/* [Front Cutout Customizations] */
-//Cut out the front
-frontCutout = true; 
-//Distance upward (Z axis) from the bottom (by mm). This captures the bottom front of the item
-frontLowerCapture = 7;
-//Distance downward (Z axis) from the top (by mm). This captures the top front of the item. Use zero (0) for a cutout top. May require printing supports if used. 
-frontUpperCapture = 0;
+/* [Bottom Cutout Customizations] */
+//Cut out the bottom (the wall the item rests on)
+bottomCutout = true;
+//Distance inward (Y axis) from the back (by mm). This captures the back of the item where it meets the bottom
+bottomBackCapture = 7;
+//Distance inward (Y axis) from the front (by mm). This captures the front of the item where it meets the bottom. Use zero (0) to open the bottom all the way to the front.
+bottomFrontCapture = 0;
 //Distance inward (X axis) from the sides (by mm) that captures the sides of the item
-frontLateralCapture = 3;
-
-
-/*[Bottom Cutout Customizations]*/
-//Cut out the bottom 
-bottomCutout = false;
-//Distance inward (Y axis) from the front (by mm). This captures the bottom front of the item
-bottomFrontCapture = 3;
-//Distance inward (Y axis) from the back (by mm). That captures the bottom back of the item
-bottomBackCapture = 3;
-//Distance inward (X axis) from the sides (by mm) that captures the bottom side of the item
 bottomSideCapture = 3;
 
+
+/*[Back Cutout Customizations]*/
+//Cut out the back (the wall between the item and the mounting surface)
+backCutout = false;
+//Distance downward (Z axis) from the mounting surface (by mm). This captures the top back of the item
+backUpperCapture = 3;
+//Distance upward (Z axis) from the bottom (by mm). This captures the bottom back of the item
+backLowerCapture = 3;
+//Distance inward (X axis) from the sides (by mm) that captures the back side of the item
+backSideCapture = 3;
+
 /*[Cord Cutout Customizations]*/
-//Cut out a slot on the bottom and through the front for a cord to connect to the device
+//Cut out a hole through the back and a slot down through the bottom for a cord to connect to the device
 cordCutout = false;
 //Diameter/width of cord cutout
 cordCutoutDiameter = 10;
 //Move the cord cutout laterally (X axis), left is positive and right is negative (by mm)
 cordCutoutLateralOffset = 0;
-//Move the cord cutout depth (Y axis), forward is positive and back is negative (by mm)
-cordCutoutDepthOffset = 0;
+//Move the cord cutout vertically (Z axis), up is positive and down is negative (by mm)
+cordCutoutVerticalOffset = 0;
 
 /* [Right Cutout Customizations] */
 rightCutout = false; 
-//Distance upward (Z axis) from the bottom (by mm) that captures the bottom right of the item
-rightLowerCapture = 7;
-//Distance downward (Z axis) from the top (by mm) that captures the top right of the item. Use zero (0) for a cutout top. May require printing supports if used. 
-rightUpperCapture = 0;
-//Distance inward (Y axis) from the sides (by mm) that captures the right sides of the item
-rightLateralCapture = 3;
+//Distance inward (Y axis) from the back (by mm) that captures the back right of the item
+rightBackCapture = 7;
+//Distance inward (Y axis) from the front (by mm) that captures the front right of the item. Use zero (0) to open the cutout to the front.
+rightFrontCapture = 0;
+//Distance inward (Z axis) from the top and bottom (by mm) that captures the right side of the item
+rightVerticalCapture = 3;
 
 
 /* [Left Cutout Customizations] */
 leftCutout = false; 
-//Distance upward (Z axis) from the bottom (by mm) that captures the bottom left of the item
-leftLowerCapture = 7;
-//Distance downward (Z axis) from the top (by mm) that captures the top left of the item. Use zero (0) for a cutout top. May require printing supports if used. 
-leftUpperCapture = 0;
-//Distance inward (Y axis) from the sides (by mm) that captures the left sides of the item
-leftLateralCapture = 3;
+//Distance inward (Y axis) from the back (by mm) that captures the back left of the item
+leftBackCapture = 7;
+//Distance inward (Y axis) from the front (by mm) that captures the front left of the item. Use zero (0) to open the cutout to the front.
+leftFrontCapture = 0;
+//Distance inward (Z axis) from the top and bottom (by mm) that captures the left side of the item
+leftVerticalCapture = 3;
 
 /*[BETA - Clamshell mode]*/
 //NOT COMPATIBLE WITH THREADED SNAPS YET. Clamshell mode is when you want to enclose the item with two separate holders. This calculates the distance between the two holders while also aligning with the mounting points.
@@ -134,12 +180,18 @@ item_slop = 0.3;
 Minimum_Safe_Mount_Clearance_From_Edge = 13;
 
 /* [Additional Customization] */
-//Thickness of item holder walls (by mm)
+//Thickness of the left, right and bottom walls (by mm)
 wallThickness = 2; //.1
-//Thickness of item holder base (by mm)
+//Thickness of the back wall, between the item and the mounting surface (by mm)
 baseThickness = 3; //.1
 
 /*[Advanced]*/
+//Rotate the model into a print-friendly orientation when rendering or exporting. The
+//preview (F5) always stays in the mounted orientation so the model reads the way it
+//mounts. Note this also applies to a full render (F6), not just to export.
+Print_Orientation = true;
+//Gap (by mm) left between the two clamshell halves when laid out for printing.
+Print_Part_Spacing = 4;
 Backer_Only_Mode = false;
 Backer_Negatives_Only = false; //If true, the backer will be negative space. If false, the backer will be positive space.
 //Set to 0 to use the default thickness of the back. Set to a number to force the back to be that thickness.
@@ -153,7 +205,7 @@ multiConnectVersion = "v2"; // [v1, v2]
 subtractedSlots = 0;
 //Offset the multiconnect on-ramps to be between grid slots rather than on the slot
 onRampHalfOffset = true;
-//Change slot orientation, when enabled slots to come from the top of the back, when disabled slots come from the bottom
+//Change slot orientation, when enabled slots are entered from the back of the mount, when disabled from the front
 Slot_From_Top = true;
 //Distance between Multiconnect slots on the back (25mm is standard for MultiBoard)
 Custom_Distance_Between_Slots = 25;
@@ -201,126 +253,161 @@ Inner_Hole_Diameter_Sm = 3.3;
 //Slop in thread. Increase to make threading easier. Decrease to make threading harder.
 Slop = 0.075;
 
-if(debugItemRepresentation){
-    %up(item_slop) cuboid([total_item_width, Internal_Height,  Internal_Width], anchor=FRONT+RIGHT, orient=RIGHT);
-}
-
-//Calculated
+//Calculated. These are the outside dimensions of the holder in the mounted frame.
 totalDepth = Backer_Only_Mode ? Internal_Depth : Internal_Depth+baseThickness;
 totalHeight = Backer_Only_Mode ? Internal_Height : Internal_Height + wallThickness;
 totalWidth = Backer_Only_Mode ? Internal_Width : Internal_Width + wallThickness*2;
-totalCenterX = Internal_Width/2;
 
+//Maps the mounting plate generator's own frame (plate face in XZ, thickness along -Y,
+//slots running along +Z) into the mounted frame, where the plate lies flat on top with
+//its slots running front to back.
+//This is a pure rotation, deliberately not a mirror: mirroring would reverse the
+//handedness of the threads generated by threadedSnapBack. The plate's slot pattern is
+//symmetric across X, so rotating about Z lands it in the same place a mirror would.
+PLATE_TO_MOUNTED = [[1,0,0,0],[0,0,1,0],[0,-1,0,0],[0,0,0,1]];
 
 //calculate total working space, respecting minimum mounting value.
 //The mounting points should be 'inside' the total width. Therefore, we are rounding down to the next mounting points on both sides
 mount_point_distance = quantdn(total_item_width+baseThickness*2+item_slop*2-(Minimum_Safe_Mount_Clearance_From_Edge)*2, distanceBetweenSlots);
 echo(str("Mount Point Distance: ", mount_point_distance));
-//new_mount_point_inward_adjustement = (total_item_width - mount_point_distance+item_slop*2 )/2;
 new_mount_point_inward_adjustement = (total_item_width - mount_point_distance + item_slop*2 + baseThickness*2)/2;
 echo(str("New Mount Point Inward Adjustment: ", new_mount_point_inward_adjustement));
 echo(str("Grid spaces apart: ",  mount_point_distance/distanceBetweenSlots));
 
-//move to center
-union(){
-translate(v = [-Internal_Width/2,0,0]) 
-    if(!Backer_Only_Mode)
-        basket();
-    //slotted back
-    if(Mounting_Style == "Multiconnect")
-        translate([0,0.02,totalDepth/2-baseThickness]) 
-            rotate([0,Slot_From_Top ? 180 : 0,0])
-                translate([-totalWidth/2,0,-totalDepth/2])//center
-                    multiconnectBack(
-                        backWidth = totalWidth, 
-                        backHeight = totalDepth, 
-                        distanceBetweenSlots = distanceBetweenSlots, 
-                        slotStopFromBack = ClamShell_Mode ? new_mount_point_inward_adjustement : Multiconnect_Stop_Distance_From_Back,
-                    );
-    else
-        translate([0,0.02,-baseThickness])
-            threadedSnapBack(backWidth = totalWidth, backHeight= totalDepth, distanceBetweenSlots = distanceBetweenSlots, anchor=BOT+BACK);
+//Everything below is drawn in the mounted frame. The print transform is applied per
+//half, at the top level, and is the only place print orientation is introduced.
+//$preview is true for F5 and false for F6 and for command-line export, so the preview
+//stays in the mounted orientation while exports come out print-ready.
+//
+//Each half is kept as its own top-level statement rather than being grouped under a
+//shared wrapper. With --enable=lazy-union that keeps them as separate objects in
+//formats that support it (such as 3MF); grouping them would fuse them into one.
+if(debugItemRepresentation){
+    %printOrient() back(Internal_Depth/2) down(Internal_Height/2)
+        cuboid([Internal_Width, Internal_Depth, Internal_Height]);
 }
 
+printOrient() itemHolder();
 
+//The clamshell partner faces back toward the first holder across the item. This is a
+//180 degree rotation about Z rather than a mirror, so that thread handedness and the
+//slot profiles are preserved on both halves.
 if(ClamShell_Mode)
-up(total_item_width+item_slop*2) zflip() //rot([0,180,0])
-union(){
-translate(v = [-Internal_Width/2,0,0]) 
-    if(!Backer_Only_Mode)
-        basket();
-    //slotted back
-    if(Mounting_Style == "Multiconnect")
-        translate([0,0.02,totalDepth/2-baseThickness]) 
-            rotate([0,Slot_From_Top ? 180 : 0,0])
-                translate([-totalWidth/2,0,-totalDepth/2])//center
-                    multiconnectBack(
-                        backWidth = totalWidth, 
-                        backHeight = totalDepth, 
-                        distanceBetweenSlots = distanceBetweenSlots, 
-                        slotStopFromBack = ClamShell_Mode ? new_mount_point_inward_adjustement : Multiconnect_Stop_Distance_From_Back,
-                    );
+    printOrient(partner=true)
+        back(total_item_width+item_slop*2) zrot(180)
+            itemHolder();
+
+//Applies the print orientation to its children, or leaves them in the mounted
+//orientation for preview.
+//
+//Printing wants a large flat face on the bed, so each half rotates about X to bring
+//its mounted back face down. The two halves face opposite ways, so they rotate in
+//opposite directions: +90 lays the first half down, -90 does the same for the partner,
+//which is already turned 180 about Z. Rotating both the same way would stand the
+//partner on its open front face instead.
+//
+//The partner is then moved back down onto the bed and in alongside the first half,
+//instead of being left a full item-width away where the mounted layout put it.
+//partnerLift undoes that item-width displacement in the rotated frame, and partnerSlide
+//packs the two halves together with Print_Part_Spacing between them.
+partnerLift = total_item_width + item_slop*2;
+partnerSlide = totalHeight*2 + Print_Part_Spacing;
+
+module printOrient(partner=false){
+    if(!$preview && Print_Orientation)
+        translate(partner ? [0, partnerSlide, partnerLift] : [0,0,0])
+            rotate(partner ? [-90,0,0] : [90,0,0])
+                children();
     else
-        translate([0,0.02,-baseThickness])
-            threadedSnapBack(backWidth = totalWidth, backHeight= totalDepth, distanceBetweenSlots = distanceBetweenSlots, anchor=BOT+BACK);
+        children();
 }
 
-//Create Basket
+//A single holder: the basket hanging below the mounting plane, plus the plate that
+//attaches it to the board above.
+module itemHolder(){
+    union(){
+        if(!Backer_Only_Mode)
+            basket();
+        multmatrix(PLATE_TO_MOUNTED)
+            if(Mounting_Style == "Multiconnect")
+                translate([0,0.02,totalDepth/2-baseThickness])
+                    rotate([0,Slot_From_Top ? 180 : 0,0])
+                        translate([-totalWidth/2,0,-totalDepth/2])//center
+                            multiconnectBack(
+                                backWidth = totalWidth, 
+                                backHeight = totalDepth, 
+                                distanceBetweenSlots = distanceBetweenSlots, 
+                                slotStopFromBack = ClamShell_Mode ? new_mount_point_inward_adjustement : Multiconnect_Stop_Distance_From_Back,
+                            );
+            else
+                translate([0,0.02,-baseThickness])
+                    threadedSnapBack(backWidth = totalWidth, backHeight= totalDepth, distanceBetweenSlots = distanceBetweenSlots, anchor=BOT+BACK);
+    }
+}
+
+//Create Basket.
+//Interior occupies x [-Internal_Width/2, +Internal_Width/2], y [-Internal_Depth, 0],
+//z [-Internal_Height, 0]. The mounting plane is z = 0 and the front (y = -Internal_Depth)
+//is open so the item can be loaded in.
 module basket() {
+    halfWidth = Internal_Width/2;
     difference() {
         union() {
-            //bottom
-            translate([-wallThickness,0,-baseThickness])
-                if (bottomCutout == true || Wall_Type == "Solid") //cutouts are not compatible with hex panels at this time. Need to build a frame first. 
-                    cuboid([Internal_Width + wallThickness*2, Internal_Height + wallThickness,baseThickness], anchor=FRONT+LEFT+BOT, rounding=edgeRounding, edges = [BOTTOM+LEFT,BOTTOM+RIGHT,BOTTOM+BACK,LEFT+BACK,RIGHT+BACK]);
+            //back wall, between the item and the mounting surface
+            translate([0, -baseThickness/2, -totalHeight/2])
+                if (backCutout == true || Wall_Type == "Solid") //cutouts are not compatible with hex panels at this time. Need to build a frame first. 
+                    cuboid([totalWidth, baseThickness, totalHeight], rounding=edgeRounding, edges = [FRONT+LEFT,FRONT+RIGHT,FRONT+BOT,LEFT+BOT,RIGHT+BOT]);
                 else    
-                     fwd(wallThickness)hex_panel([Internal_Width + wallThickness*2,Internal_Height+wallThickness*2, baseThickness], strut = 1, spacing = 5, frame= wallThickness, anchor=FRONT+LEFT+BOT);
+                    cuboid([totalWidth, baseThickness, totalHeight]);
 
-            //left wall
-            translate([-wallThickness,0,0])
-                if (leftCutout == true || Wall_Type == "Solid") //cutouts are not compatible with hex panels at this time. Need to build a frame first. 
-                    cuboid([wallThickness, Internal_Height + wallThickness, Internal_Depth], anchor=FRONT+LEFT+BOT, rounding=edgeRounding, edges = [TOP+LEFT,TOP+BACK,BACK+LEFT]);
-                else    
-                     fwd(wallThickness)hex_panel([Internal_Depth, Internal_Height + wallThickness*2,wallThickness], strut = 1, spacing = 7, frame= wallThickness, orient=RIGHT, anchor=FRONT+RIGHT+BOT);
-
-            //right wall
-            translate([Internal_Width,0,0])
+            //right wall (at -X: you face -Y, so your right hand points to -X)
+            translate([-halfWidth-wallThickness/2, Internal_Depth/2, -totalHeight/2])
                 if (rightCutout == true || Wall_Type == "Solid") //cutouts are not compatible with hex panels at this time. Need to build a frame first. 
-                    cuboid([wallThickness, Internal_Height + wallThickness, Internal_Depth], anchor=FRONT+LEFT+BOT, rounding=edgeRounding, edges = [TOP+RIGHT,TOP+BACK,BACK+RIGHT]);
+                    cuboid([wallThickness, Internal_Depth, totalHeight], rounding=edgeRounding, edges = [BACK+LEFT,BACK+BOT,BOT+LEFT]);
                 else    
-                     fwd(wallThickness)hex_panel([Internal_Depth, Internal_Height + wallThickness*2,wallThickness], strut = 1, spacing = 7, frame= wallThickness, orient=RIGHT, anchor=FRONT+RIGHT+BOT);
+                    yrot(90) hex_panel([totalHeight, Internal_Depth, wallThickness], strut = 1, spacing = 7, frame = wallThickness);
 
-            //front wall            
-            translate([0,Internal_Height,0])
-                if (frontCutout == true || Wall_Type == "Solid") //cutouts are not compatible with hex panels at this time. Need to build a frame first. 
-                    cuboid([Internal_Width,wallThickness,Internal_Depth], anchor=FRONT+LEFT+BOT, rounding=edgeRounding, edges = [TOP+BACK]);
+            //left wall (at +X)
+            translate([halfWidth+wallThickness/2, Internal_Depth/2, -totalHeight/2])
+                if (leftCutout == true || Wall_Type == "Solid") //cutouts are not compatible with hex panels at this time. Need to build a frame first. 
+                    cuboid([wallThickness, Internal_Depth, totalHeight], rounding=edgeRounding, edges = [BACK+RIGHT,BACK+BOT,BOT+RIGHT]);
                 else    
-                    back(wallThickness)zrot(-90) hex_panel([Internal_Depth,Internal_Width,wallThickness], strut = 1, spacing = 7, frame= wallThickness,orient=RIGHT, anchor=FRONT+RIGHT+BOT);
+                    yrot(90) hex_panel([totalHeight, Internal_Depth, wallThickness], strut = 1, spacing = 7, frame = wallThickness);
+
+            //bottom wall, which the item rests on
+            translate([0, Internal_Depth/2, -Internal_Height-wallThickness/2])
+                if (bottomCutout == true || Wall_Type == "Solid") //cutouts are not compatible with hex panels at this time. Need to build a frame first. 
+                    cuboid([Internal_Width, Internal_Depth, wallThickness], rounding=edgeRounding, edges = [BACK+BOT]);
+                else    
+                    hex_panel([Internal_Width, Internal_Depth, wallThickness], strut = 1, spacing = 7, frame = wallThickness);
         }
 
-        //frontCaptureDeleteTool for item holders
-            if (frontCutout == true)
-                translate([frontLateralCapture,Internal_Height-1,frontLowerCapture])
-                    cube([Internal_Width-frontLateralCapture*2,wallThickness+2,Internal_Depth-frontLowerCapture-frontUpperCapture+0.01]);
-            if (bottomCutout == true)
-                translate(v = [bottomSideCapture,bottomBackCapture,-baseThickness-1]) 
-                    cube([Internal_Width-bottomSideCapture*2,Internal_Height-bottomFrontCapture-bottomBackCapture,baseThickness+2]);
-            if (rightCutout == true)
-                translate([-wallThickness-1,rightLateralCapture,rightLowerCapture])
-                    cube([wallThickness+2,Internal_Height-rightLateralCapture*2,Internal_Depth-rightLowerCapture-rightUpperCapture+0.01]);
-            if (leftCutout == true)
-                translate([Internal_Width-1,leftLateralCapture,leftLowerCapture])
-                    cube([wallThickness+2,Internal_Height-leftLateralCapture*2,Internal_Depth-leftLowerCapture-leftUpperCapture+0.01]);
-            if (cordCutout == true) {
-                translate(v = [Internal_Width/2+cordCutoutLateralOffset,Internal_Height/2+cordCutoutDepthOffset,-baseThickness-1]) {
-                    union(){
-                        cylinder(h = baseThickness + frontLowerCapture + 2, r = cordCutoutDiameter/2);
-                        translate(v = [-cordCutoutDiameter/2,0,0]) cube([cordCutoutDiameter,Internal_Width/2+wallThickness+1,baseThickness + frontLowerCapture + 2]);
-                    }
+        //Delete tools. Each one opens up a face while leaving a lip that captures the item.
+        //A front capture of zero opens the cutout to the front face, so the tool has to
+        //overshoot that face slightly. Otherwise it would end exactly on it and leave a
+        //coincident zero-depth face that renders as a flickering rectangle in preview.
+        if (bottomCutout == true)
+            translate([-Internal_Width/2+bottomSideCapture, bottomBackCapture-0.01, -Internal_Height-wallThickness-1])
+                cube([Internal_Width-bottomSideCapture*2, Internal_Depth-bottomFrontCapture-bottomBackCapture+0.01+(bottomFrontCapture == 0 ? 0.01 : 0), wallThickness+2]);
+        if (backCutout == true)
+            translate([-Internal_Width/2+backSideCapture, -baseThickness-1, -Internal_Height+backLowerCapture])
+                cube([Internal_Width-backSideCapture*2, baseThickness+2, Internal_Height-backLowerCapture-backUpperCapture]);
+        if (rightCutout == true)
+            translate([-halfWidth-wallThickness-1, rightBackCapture-0.01, -Internal_Height+rightVerticalCapture])
+                cube([wallThickness+2, Internal_Depth-rightFrontCapture-rightBackCapture+0.01+(rightFrontCapture == 0 ? 0.01 : 0), Internal_Height-rightVerticalCapture*2]);
+        if (leftCutout == true)
+            translate([halfWidth-1, leftBackCapture-0.01, -Internal_Height+leftVerticalCapture])
+                cube([wallThickness+2, Internal_Depth-leftFrontCapture-leftBackCapture+0.01+(leftFrontCapture == 0 ? 0.01 : 0), Internal_Height-leftVerticalCapture*2]);
+        if (cordCutout == true)
+            translate([cordCutoutLateralOffset, -baseThickness-1, -Internal_Height/2+cordCutoutVerticalOffset])
+                union(){
+                    //hole through the back wall
+                    xrot(-90) cylinder(h = baseThickness + bottomBackCapture + 2, r = cordCutoutDiameter/2);
+                    //slot running down and out through the bottom wall
+                    translate([-cordCutoutDiameter/2, 0, -Internal_Height/2-wallThickness-1])
+                        cube([cordCutoutDiameter, baseThickness+bottomBackCapture+2, Internal_Height/2+wallThickness+1]);
                 }
-            }
     }
-    
 }
 
 
