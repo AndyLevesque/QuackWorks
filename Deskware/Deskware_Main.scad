@@ -1408,7 +1408,7 @@ module BasePlateEndRounded(width, depth, height = 19, half = LEFT, style="Oct"){
             //HOK Connector cutouts
             tag("HOKConnectors")
             attach(BOT, BOT, inside=true, shiftout=0.01) 
-                grid_copies(spacing=[HOK_Connector_Inset*2-clearance*2,HOK_Connector_Spacing_Depth])
+                grid_copies(n=2, spacing=[HOK_Connector_Inset*2-clearance*2,HOK_Connector_Spacing_Depth])
                 zrot(90)
                     HOKConnectorDeleteTool();
             if(Additional_Top_Plate_Support)
@@ -1600,7 +1600,7 @@ module Riser(slideSides = "BOTH", height = Riser_Height, chamfer = 0, anchor=BOT
                     Drawer_Slide(deleteTool = true);
             //HOK Connector cutouts
             attach([TOP, BOT], BOT, inside=true, shiftout=0.01) 
-                grid_copies(spacing=[HOK_Connector_Inset*2-clearance,HOK_Connector_Spacing_Depth])
+                grid_copies(n=2, spacing=[HOK_Connector_Inset*2-clearance,HOK_Connector_Spacing_Depth])
                 zrot(90)
                     HOKConnectorDeleteTool();
             xcopies(spacing = TopPlateTabWidth + Backer_To_Riser_Tab_Inset*2)
